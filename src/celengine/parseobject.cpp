@@ -87,8 +87,9 @@ static EllipticalOrbit*
 CreateEllipticalOrbit(Hash* orbitData,
                       bool usePlanetUnits)
 {
-    // SemiMajorAxis and Period are absolutely required; everything
-    // else has a reasonable default.
+    // SemiMajorAxis (or PericenterDistance) is required; Period is required
+    // for elliptic orbits but optional for parabolic/hyperbolic orbits where
+    // it is derived from the orbital elements assuming a heliocentric orbit.
     double pericenterDistance = 0.0;
     double semiMajorAxis = 0.0;
     if (!orbitData->getNumber("SemiMajorAxis", semiMajorAxis))
@@ -100,15 +101,19 @@ CreateEllipticalOrbit(Hash* orbitData,
         }
     }
 
+    double eccentricity = 0.0;
+    orbitData->getNumber("Eccentricity", eccentricity);
+
     double period = 0.0;
     if (!orbitData->getNumber("Period", period))
     {
-        clog << "Period missing!  Skipping planet . . .\n";
-        return NULL;
+        if (eccentricity < 1.0)
+        {
+            clog << "Period missing!  Skipping planet . . .\n";
+            return NULL;
+        }
+        // For ecc >= 1, period will be derived from orbital elements below.
     }
-
-    double eccentricity = 0.0;
-    orbitData->getNumber("Eccentricity", eccentricity);
 
     double inclination = 0.0;
     orbitData->getNumber("Inclination", inclination);
@@ -154,6 +159,25 @@ CreateEllipticalOrbit(Hash* orbitData,
         if (eccentricity > 1.0 && semiMajorAxis > 0.0)
             semiMajorAxis = -semiMajorAxis;
         pericenterDistance = semiMajorAxis * (1.0 - eccentricity);
+    }
+
+    // Auto-compute period for non-elliptic orbits when not supplied.
+    // Assumes a heliocentric orbit; uses GM_sun = k^2 * AU^3 (km^3/day^2)
+    // where k = 0.01720209895 is Gauss's gravitational constant.
+    if (period == 0.0 && eccentricity >= 1.0)
+    {
+        const double k = 0.01720209895;
+        const double GM_sun = k * k * (KM_PER_AU * KM_PER_AU * KM_PER_AU);
+        if (eccentricity > 1.0)
+        {
+            double a = pericenterDistance / (eccentricity - 1.0);
+            period = 2.0 * PI * sqrt(a * a * a / GM_sun);
+        }
+        else // parabolic
+        {
+            double q = pericenterDistance;
+            period = 2.0 * PI * sqrt(2.0 * q * q * q / GM_sun);
+        }
     }
 
     return new EllipticalOrbit(pericenterDistance,
