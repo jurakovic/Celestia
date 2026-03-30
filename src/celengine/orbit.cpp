@@ -168,9 +168,13 @@ double EllipticalOrbit::eccentricAnomaly(double M) const
     }
     else if (eccentricity == 1.0)
     {
-        // Nearly parabolic orbit; very common for comets
-        // TODO: handle this
-        return M;
+        // Parabolic orbit: solve Barker's equation D + D^3/3 = M for D,
+        // where D = tan(true_anomaly/2).
+        // Closed-form solution via Cardano's formula: D = Y - 1/Y,
+        // Y = cbrt(W + sqrt(W^2 + 1)), W = 3*M/2.
+        double W = 1.5 * M;
+        double Y = cbrt(W + sqrt(W * W + 1.0));
+        return Y - 1.0 / Y;
     }
     else
     {
@@ -205,9 +209,10 @@ Point3d EllipticalOrbit::positionAtE(double E) const
     }
     else
     {
-        // TODO: Handle parabolic orbits
-        x = 0.0;
-        y = 0.0;
+        // Parabolic orbit: E here is D = tan(true_anomaly/2).
+        // Position: x = q*(1 - D^2), y = 2q*D  (pericenter at x=q, y=0)
+        x = pericenterDistance * (1.0 - E * E);
+        y = 2.0 * pericenterDistance * E;
     }
 
     Point3d p = orbitPlaneRotation * Point3d(x, y, 0);
@@ -249,9 +254,13 @@ Vec3d EllipticalOrbit::velocityAtE(double E) const
     }
     else
     {
-        // TODO: Handle parabolic orbits
-        x = 0.0;
-        y = 0.0;
+        // Parabolic orbit: E here is D = tan(true_anomaly/2).
+        // From Barker's equation: dM/dt = meanMotion = (1 + D^2) * dD/dt
+        // vx = -2q*D * dD/dt,  vy = 2q * dD/dt
+        double meanMotion = 2.0 * PI / period;
+        double Ddot = meanMotion / (1.0 + E * E);
+        x = -2.0 * pericenterDistance * E * Ddot;
+        y =  2.0 * pericenterDistance * Ddot;
     }
 
     Vec3d v = orbitPlaneRotation * Vec3d(x, y, 0);
@@ -315,7 +324,19 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
     }
     else if (eccentricity == 1.0)
     {
-        // Parabolic orbits are not yet supported; no samples generated.
+        // Sample both legs of the parabolic orbit from -D_max to +D_max,
+        // where D_max corresponds to the bounding radius.
+        // From r = q*(1 + D^2): D_max = sqrt(r_max/q - 1)
+        double D_max = sqrt(max(getBoundingRadius() / pericenterDistance - 1.0, 0.0));
+        double meanMotion = 2.0 * PI / period;
+        double dD = 2.0 * D_max / (double) nSamples;
+        for (int i = 0; i < nSamples; i++)
+        {
+            double D = -D_max + dD * i;
+            double M = D + D * D * D / 3.0;
+            double tsamp = t + M / meanMotion;
+            proc.sample(tsamp, positionAtE(D));
+        }
     }
     else
     {
