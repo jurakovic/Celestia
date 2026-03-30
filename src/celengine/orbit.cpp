@@ -24,6 +24,9 @@ using namespace std;
 // override velocityAtTime().
 static const double ORBITAL_VELOCITY_DIFF_DELTA = 1.0 / 1440.0;
 
+// Follow hyperbolic orbit trajectories out to at least 1000 AU
+static const double HyperbolicMinBoundingRadius = 1000.0 * 1.4959787e8;
+
 
 EllipticalOrbit::EllipticalOrbit(double _pericenterDistance,
                                  double _eccentricity,
@@ -172,9 +175,12 @@ double EllipticalOrbit::eccentricAnomaly(double M) const
     else
     {
         // Laguerre-Conway method for hyperbolic (ecc > 1) orbits.
-        double E = log(2 * M / eccentricity + 1.85);
-        Solution sol = solve_iteration_fixed(SolveKeplerLaguerreConwayHyp(eccentricity, M), E, 30);
-        return sol.first;
+        if (M == 0.0)
+            return 0.0;
+        double absM = fabs(M);
+        double E = log(2.0 * absM / eccentricity + 1.85);
+        Solution sol = solve_iteration_fixed(SolveKeplerLaguerreConwayHyp(eccentricity, absM), E, 30);
+        return (M > 0.0) ? sol.first : -sol.first;
     }
 }
 
@@ -234,8 +240,12 @@ Vec3d EllipticalOrbit::velocityAtE(double E) const
     else if (eccentricity > 1.0)
     {
         double a = pericenterDistance / (1.0 - eccentricity);
-        x = -a * (eccentricity - cosh(E));
-        y = -a * sqrt(square(eccentricity) - 1) * sinh(E);
+        double sinhE = sinh(E);
+        double coshE = cosh(E);
+        double meanMotion = 2.0 * PI / period;
+        double edot = meanMotion / (eccentricity * coshE - 1.0);
+        x = a * sinhE * edot;
+        y = -a * sqrt(square(eccentricity) - 1.0) * coshE * edot;
     }
     else
     {
@@ -282,19 +292,30 @@ double EllipticalOrbit::getPeriod() const
 
 double EllipticalOrbit::getBoundingRadius() const
 {
-    // TODO: watch out for unbounded parabolic and hyperbolic orbits
-    return pericenterDistance * ((1.0 + eccentricity) / (1.0 - eccentricity));
+    if (eccentricity < 1.0)
+        return pericenterDistance * ((1.0 + eccentricity) / (1.0 - eccentricity));
+    else
+        return HyperbolicMinBoundingRadius;
 }
 
 
 void EllipticalOrbit::sample(double, double t, int nSamples,
                              OrbitSampleProc& proc) const
 {
-    if (eccentricity >= 1.0)
+    if (eccentricity > 1.0)
     {
-        double dE = 1 * PI / (double) nSamples;
+        // Sample both the inbound and outbound legs of the hyperbolic orbit,
+        // centred on pericenter (E=0), out to the bounding radius.
+        double a_abs = pericenterDistance / (eccentricity - 1.0);
+        double coshEmax = (getBoundingRadius() / a_abs + 1.0) / eccentricity;
+        double E_max = (coshEmax > 1.0) ? acosh(min(coshEmax, 1.0e6)) : 0.0;
+        double dE = 2.0 * E_max / (double) nSamples;
         for (int i = 0; i < nSamples; i++)
-            proc.sample(t, positionAtE(dE * i));
+            proc.sample(t, positionAtE(-E_max + dE * i));
+    }
+    else if (eccentricity == 1.0)
+    {
+        // Parabolic orbits are not yet supported; no samples generated.
     }
     else
     {

@@ -147,7 +147,14 @@ CreateEllipticalOrbit(Hash* orbitData,
     // If we read the semi-major axis, use it to compute the pericenter
     // distance.
     if (semiMajorAxis != 0.0)
+    {
+        // For hyperbolic orbits (ecc > 1) the semi-major axis is negative by
+        // convention.  Accept a positive value from the user and negate it so
+        // that pericenterDistance comes out positive.
+        if (eccentricity > 1.0 && semiMajorAxis > 0.0)
+            semiMajorAxis = -semiMajorAxis;
         pericenterDistance = semiMajorAxis * (1.0 - eccentricity);
+    }
 
     return new EllipticalOrbit(pericenterDistance,
                                eccentricity,
