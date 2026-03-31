@@ -4,20 +4,17 @@ on:
   push:
     branches: [ 1.6.x ]
     paths: [ src/**, .github/workflows/ci.yml, celestia.sln, celestia.vcxproj, celestia.iss ]
-  pull_request:
-    branches: [ 1.6.x ]
-    paths: [ src/**, .github/workflows/ci.yml, celestia.sln, celestia.vcxproj, celestia.iss ]
 
 env:
   VCPKG_BINARY_SOURCES: 'clear;nuget,GitHub,readwrite'
+
+permissions:
+  packages: write
 
 jobs:
   build-windows:
     name: "Build and package Windows"
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
@@ -36,12 +33,12 @@ jobs:
         ./vcpkg.exe integrate install
         
         $nugetCmd = vcpkg fetch nuget | Select-Object -Last 1
-        $nugetSource = 'https://nuget.pkg.github.com/CelestiaProject/index.json'
+        $nugetSource = 'https://nuget.pkg.github.com/jurakovic/index.json'
         & "$nugetCmd" sources add `
           -Source "$nugetSource" `
           -StorePasswordInClearText `
           -Name "GitHub" `
-          -Username 'CelestiaProject' `
+          -Username 'jurakovic' `
           -Password '${{secrets.GITHUB_TOKEN}}'
         & "$nugetCmd" setapikey '${{secrets.GITHUB_TOKEN}}' `
           -Source "$nugetSource"
@@ -53,31 +50,7 @@ jobs:
           throw "Failed to install x64-windows dependencies"
         }
 
-        ./vcpkg.exe --triplet=x86-windows --host-triplet=x86-windows `
-          install --recurse libpng libjpeg-turbo gettext luajit cspice
-
-        if ($LastExitCode -ne 0) {
-          throw "Failed to install x86-windows dependencies"
-        }
-
         popd
-
-    - name: Build Win32
-      shell: pwsh
-      run: |
-        $installationPath = vswhere.exe -prerelease -latest -property installationPath
-        if ($installationPath -and (Test-Path "$installationPath\Common7\Tools\vsdevcmd.bat")) {
-          & "${env:COMSPEC}" /s /c "`"$installationPath\Common7\Tools\vsdevcmd.bat`" -no_logo -arch=x86 -host_arch=amd64 && set" | ForEach-Object {
-            $name, $value = $_ -split '=', 2
-            Set-Content env:\"$name" $value
-          }
-        }
-        msbuild celestia.sln /p:Configuration=Release /p:Platform=Win32
-        if ($LastExitCode -ne 0) {
-          throw "Failed to build Win32"
-        }
-        $env:PATH += ";${env:VCPKG_INSTALLATION_ROOT}/installed/x64-windows/tools/gettext/bin"
-        perl po/translate_resources.pl Win32
 
     - name: Build x64
       shell: pwsh
@@ -102,7 +75,7 @@ jobs:
       run: ISCC celestia.iss
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: success()
       with:
         name: celestia-windows-installer
