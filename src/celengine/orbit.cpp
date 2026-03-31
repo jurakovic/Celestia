@@ -308,6 +308,44 @@ double EllipticalOrbit::getBoundingRadius() const
 }
 
 
+bool EllipticalOrbit::isPeriodic() const
+{
+    return eccentricity < 1.0;
+}
+
+
+void EllipticalOrbit::getValidRange(double& begin, double& end) const
+{
+    if (eccentricity < 1.0)
+    {
+        // Elliptic orbits are always valid; returning begin == end signals this.
+        begin = end = 0.0;
+        return;
+    }
+
+    // For parabolic/hyperbolic orbits return the time window corresponding to
+    // the trajectory arc within the bounding radius.
+    double meanMotion = 2.0 * PI / period;
+    double M_max;
+
+    if (eccentricity > 1.0)
+    {
+        double a_abs = pericenterDistance / (eccentricity - 1.0);
+        double coshEmax = (getBoundingRadius() / a_abs + 1.0) / eccentricity;
+        double E_max = (coshEmax > 1.0) ? acosh(min(coshEmax, 1.0e6)) : 0.0;
+        M_max = eccentricity * sinh(E_max) - E_max;
+    }
+    else // parabolic
+    {
+        double D_max = sqrt(max(getBoundingRadius() / pericenterDistance - 1.0, 0.0));
+        M_max = D_max + D_max * D_max * D_max / 3.0;
+    }
+
+    begin = epoch + (-M_max - meanAnomalyAtEpoch) / meanMotion;
+    end   = epoch + ( M_max - meanAnomalyAtEpoch) / meanMotion;
+}
+
+
 void EllipticalOrbit::sample(double, double t, int nSamples,
                              OrbitSampleProc& proc) const
 {
@@ -319,8 +357,14 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         double coshEmax = (getBoundingRadius() / a_abs + 1.0) / eccentricity;
         double E_max = (coshEmax > 1.0) ? acosh(min(coshEmax, 1.0e6)) : 0.0;
         double dE = 2.0 * E_max / (double) nSamples;
+        double meanMotion = 2.0 * PI / period;
         for (int i = 0; i < nSamples; i++)
-            proc.sample(t, positionAtE(-E_max + dE * i));
+        {
+            double E = -E_max + dE * i;
+            double M = eccentricity * sinh(E) - E;
+            double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
+            proc.sample(tsamp, positionAtE(E));
+        }
     }
     else if (eccentricity == 1.0)
     {
@@ -334,7 +378,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         {
             double D = -D_max + dD * i;
             double M = D + D * D * D / 3.0;
-            double tsamp = t + M / meanMotion;
+            double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(D));
         }
     }

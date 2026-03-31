@@ -56,6 +56,8 @@ class EllipticalOrbit : public Orbit
     virtual Vec3d velocityAtTime(double) const;
     double getPeriod() const;
     double getBoundingRadius() const;
+    virtual bool isPeriodic() const;
+    virtual void getValidRange(double& begin, double& end) const;
     virtual void sample(double, double, int, OrbitSampleProc&) const;
 
  private:
