@@ -370,17 +370,27 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
     {
         // Sample both the inbound and outbound legs of the hyperbolic orbit,
         // centred on pericenter (E=0), out to the bounding radius.
+        // Adaptive curvature-based stepping: more samples near pericenter where
+        // curvature is high, fewer far out where the path is nearly straight.
         double a_abs = pericenterDistance / (eccentricity - 1.0);
         double coshEmax = (getBoundingRadius() / a_abs + 1.0) / eccentricity;
         double E_max = (coshEmax > 1.0) ? acosh(min(coshEmax, 1.0e6)) : 0.0;
-        double dE = 2.0 * E_max / (double) nSamples;
         double meanMotion = 2.0 * PI / period;
-        for (int i = 0; i < nSamples; i++)
+        double b = sqrt(square(eccentricity) - 1.0); // semi-minor axis scale
+        double dE = 2.0 * E_max / (double) nSamples;  // base step for a circular-curvature orbit
+        double E = -E_max;
+        while (E < E_max)
         {
-            double E = -E_max + dE * i;
             double M = eccentricity * sinh(E) - E;
             double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(E));
+
+            // Curvature of hyperbolic anomaly parameterisation:
+            // k = b / (sinh^2(E) + b^2*cosh^2(E))^(3/2)
+            double sinhE = sinh(E);
+            double coshE = cosh(E);
+            double k = b / pow(square(sinhE) + square(b) * square(coshE), 1.5);
+            E += dE / max(min(k, 20.0), 1.0);
         }
     }
     else if (eccentricity == 1.0)
@@ -388,15 +398,20 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         // Sample both legs of the parabolic orbit from -D_max to +D_max,
         // where D_max corresponds to the bounding radius.
         // From r = q*(1 + D^2): D_max = sqrt(r_max/q - 1)
+        // Adaptive curvature-based stepping concentrates samples near D=0 (pericenter).
         double D_max = sqrt(max(getBoundingRadius() / pericenterDistance - 1.0, 0.0));
         double meanMotion = 2.0 * PI / period;
         double dD = 2.0 * D_max / (double) nSamples;
-        for (int i = 0; i < nSamples; i++)
+        double D = -D_max;
+        while (D < D_max)
         {
-            double D = -D_max + dD * i;
             double M = D + D * D * D / 3.0;
             double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(D));
+
+            // Curvature of parabolic D parameterisation: k = 1 / (1 + D^2)^(3/2)
+            double k = 1.0 / pow(1.0 + D * D, 1.5);
+            D += dD / max(min(k, 20.0), 1.0);
         }
     }
     else
@@ -406,18 +421,22 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         if (apocenter > MaxOrbitRadius)
         {
             // Near-parabolic elliptic orbit: only sample the arc within MaxOrbitRadius,
-            // symmetrically around pericenter (E=0), same approach as hyperbolic.
+            // symmetrically around pericenter (E=0), using adaptive curvature stepping.
             double a = pericenterDistance / (1.0 - eccentricity);
             double cosE = (1.0 - MaxOrbitRadius / a) / eccentricity;
             double E_max = acos(max(min(cosE, 1.0), -1.0));
-            double dE = 2.0 * E_max / (double) nSamples;
             double meanMotion = 2.0 * PI / period;
-            for (int i = 0; i < nSamples; i++)
+            double w = 1.0 - square(eccentricity);
+            double dE = 2.0 * E_max / (double) nSamples;
+            double E = -E_max;
+            while (E < E_max)
             {
-                double E = -E_max + dE * i;
                 double M = E - eccentricity * sin(E);
                 double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
                 proc.sample(tsamp, positionAtE(E));
+
+                double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                E += dE / max(min(k, 20.0), 1.0);
             }
         }
         else
