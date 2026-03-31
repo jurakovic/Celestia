@@ -1,17 +1,42 @@
-| **`Release`** | **`Localized`** | **`License`** | **`Contribute`** |
-|-------------------|---------------|---------------|---------------|
-|[![GitHub release](https://img.shields.io/github/v/release/CelestiaProject/Celestia?label=Release)](https://celestiaproject.space/download.html) | [![Localization](https://img.shields.io/badge/Localized-85%25-green.svg)](#) | [![License](https://img.shields.io/github/license/CelestiaProject/Celestia?label=License)](https://github.com/CelestiaProject/Celestia/blob/master/COPYING) | [![Contribute](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](#contributing) |
+| **`Release`** | **`License`** |
+|-------------------|---------------|
+| [![GitHub release](https://img.shields.io/github/v/release/jurakovic/Celestia?label=Release)](https://github.com/jurakovic/Celestia/releases) | [![License](https://img.shields.io/github/license/CelestiaProject/Celestia?label=License)](https://github.com/CelestiaProject/Celestia/blob/master/COPYING) |
 
 # Celestia
 ![Celestia](celestia-logo.png)<br>
 **A real-time space simulation that lets you experience our universe in three dimensions.**
 
-**Copyright © 2001-2023, Celestia Development Team**<br>
+**Copyright © 2001-2026, Celestia Development Team**<br>
 **Celestia website: https://celestiaproject.space**<br>
 **Celestia Wikibook: https://en.wikibooks.org/wiki/Celestia**<br>
 **Celestia forums: https://celestiaproject.space/forum/**<br>
 **Celestia Subreddit: https://www.reddit.com/r/Celestiasoftware/**<br>
 **Celestia Archive Repository: https://github.com/Anthony-B-Russo10/Celestia-Archive**
+
+## Fork Notes
+
+This is a personal fork of [Celestia 1.6.x](https://github.com/CelestiaProject/Celestia/tree/1.6.x) with added support for non-elliptic comet orbits (parabolic and hyperbolic).
+
+Celestia 1.6.x only renders orbits with eccentricity < 1 (elliptic). This fork extends `EllipticalOrbit` to handle all three conic sections:
+
+- **Elliptic** (e < 1) – unchanged
+- **Parabolic** (e = 1) – Barker's equation solved via Cardano's closed form
+- **Hyperbolic** (e > 1) – Laguerre-Conway iteration on hyperbolic Kepler's equation
+
+All open orbit trails are capped at 500 AU. Near-parabolic elliptic orbits (apocenter > 500 AU) are treated as open arcs. Adaptive curvature-based sampling is applied to all orbit types for smooth rendering at all zoom levels.
+
+For full implementation details see [docs/comet-orbits.md](docs/comet-orbits.md).
+
+## Installation
+
+Releases are available on the [Releases](https://github.com/jurakovic/Celestia/releases) page as a Windows installer.
+
+For users of [Celestia Portable](https://portableapps.com/apps/education/celestia_portable), the raw build output (`celestia-x64-build`) attached to each release can be used to replace the exe and DLLs in the portable installation directly, without running the installer.
+
+## Comet Data
+
+[Comets](https://github.com/jurakovic/Comets) is a Windows app for comet observation and analysis – featuring ephemeris calculation, visual magnitude and distance graphs, a 3D orbit viewer, and support for all MPC-listed orbital element formats. It can export comet data as `.ssc` catalog files compatible with this Celestia build.
+
 ## License
 
 This program is free software; you can redistribute it and/or modify it under

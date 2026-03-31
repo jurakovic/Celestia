@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Visual Studio 2022** (or 2017/2019) with the C++ workload
-- **vcpkg** — install it somewhere, e.g. `C:\vcpkg`
+- **vcpkg** – install it somewhere, e.g. `C:\vcpkg`
 
 ## 1. Install vcpkg
 
