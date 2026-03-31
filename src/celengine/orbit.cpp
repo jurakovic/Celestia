@@ -24,8 +24,10 @@ using namespace std;
 // override velocityAtTime().
 static const double ORBITAL_VELOCITY_DIFF_DELTA = 1.0 / 1440.0;
 
-// Follow hyperbolic orbit trajectories out to at least 1000 AU
-static const double HyperbolicMinBoundingRadius = 1000.0 * 1.4959787e8;
+// Maximum distance at which any orbit trail is drawn (500 AU in km).
+// Applies to all orbit types: elliptic orbits whose apocenter exceeds this
+// value are treated as open arcs, same as parabolic/hyperbolic orbits.
+static const double MaxOrbitRadius = 500.0 * 1.4959787e8;
 
 
 EllipticalOrbit::EllipticalOrbit(double _pericenterDistance,
@@ -302,42 +304,57 @@ double EllipticalOrbit::getPeriod() const
 double EllipticalOrbit::getBoundingRadius() const
 {
     if (eccentricity < 1.0)
-        return pericenterDistance * ((1.0 + eccentricity) / (1.0 - eccentricity));
+    {
+        double apocenter = pericenterDistance * (1.0 + eccentricity) / (1.0 - eccentricity);
+        return min(apocenter, MaxOrbitRadius);
+    }
     else
-        return HyperbolicMinBoundingRadius;
+        return MaxOrbitRadius;
 }
 
 
 bool EllipticalOrbit::isPeriodic() const
 {
-    return eccentricity < 1.0;
+    if (eccentricity >= 1.0)
+        return false;
+    // Treat near-parabolic elliptic orbits whose apocenter exceeds MaxOrbitRadius
+    // as open arcs so the renderer doesn't try to close the loop.
+    double apocenter = pericenterDistance * (1.0 + eccentricity) / (1.0 - eccentricity);
+    return apocenter <= MaxOrbitRadius;
 }
 
 
 void EllipticalOrbit::getValidRange(double& begin, double& end) const
 {
-    if (eccentricity < 1.0)
-    {
-        // Elliptic orbits are always valid; returning begin == end signals this.
-        begin = end = 0.0;
-        return;
-    }
-
-    // For parabolic/hyperbolic orbits return the time window corresponding to
-    // the trajectory arc within the bounding radius.
     double meanMotion = 2.0 * PI / period;
     double M_max;
 
-    if (eccentricity > 1.0)
+    if (eccentricity < 1.0)
+    {
+        double apocenter = pericenterDistance * (1.0 + eccentricity) / (1.0 - eccentricity);
+        if (apocenter <= MaxOrbitRadius)
+        {
+            // Full elliptic orbit always valid; begin == end signals this.
+            begin = end = 0.0;
+            return;
+        }
+        // Near-parabolic: find E where the distance equals MaxOrbitRadius.
+        // r = a*(1 - e*cos(E))  =>  cos(E) = (1 - MaxOrbitRadius/a) / e
+        double a = pericenterDistance / (1.0 - eccentricity);
+        double cosE = (1.0 - MaxOrbitRadius / a) / eccentricity;
+        double E_max = acos(max(min(cosE, 1.0), -1.0));
+        M_max = E_max - eccentricity * sin(E_max);
+    }
+    else if (eccentricity > 1.0)
     {
         double a_abs = pericenterDistance / (eccentricity - 1.0);
-        double coshEmax = (getBoundingRadius() / a_abs + 1.0) / eccentricity;
+        double coshEmax = (MaxOrbitRadius / a_abs + 1.0) / eccentricity;
         double E_max = (coshEmax > 1.0) ? acosh(min(coshEmax, 1.0e6)) : 0.0;
         M_max = eccentricity * sinh(E_max) - E_max;
     }
     else // parabolic
     {
-        double D_max = sqrt(max(getBoundingRadius() / pericenterDistance - 1.0, 0.0));
+        double D_max = sqrt(max(MaxOrbitRadius / pericenterDistance - 1.0, 0.0));
         M_max = D_max + D_max * D_max * D_max / 3.0;
     }
 
@@ -384,30 +401,52 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
     }
     else
     {
-        // Adaptive sampling of the orbit; more samples in regions of high curvature.
-        // nSamples is the number of samples that will be used for a perfectly circular
-        // orbit. Elliptical orbits will have regions of higher curvature thar require
-        // additional sample points.
-        double E = 0.0;
-        double dE = 2 * PI / (double) nSamples;
-        double w = (1 - square(eccentricity));
-        double M0 = E - eccentricity * sin(E);
-        
-        while (E < 2 * PI)
+        double apocenter = pericenterDistance * (1.0 + eccentricity) / (1.0 - eccentricity);
+
+        if (apocenter > MaxOrbitRadius)
         {
-            // Compute the time tag for this sample
-            double M = E - eccentricity * sin(E);            // Mean anomaly from ecc anomaly
-            double tsamp = t + (M - M0) * period / (2 * PI); // Time from mean anomaly
-            
-            proc.sample(tsamp, positionAtE(E));
+            // Near-parabolic elliptic orbit: only sample the arc within MaxOrbitRadius,
+            // symmetrically around pericenter (E=0), same approach as hyperbolic.
+            double a = pericenterDistance / (1.0 - eccentricity);
+            double cosE = (1.0 - MaxOrbitRadius / a) / eccentricity;
+            double E_max = acos(max(min(cosE, 1.0), -1.0));
+            double dE = 2.0 * E_max / (double) nSamples;
+            double meanMotion = 2.0 * PI / period;
+            for (int i = 0; i < nSamples; i++)
+            {
+                double E = -E_max + dE * i;
+                double M = E - eccentricity * sin(E);
+                double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
+                proc.sample(tsamp, positionAtE(E));
+            }
+        }
+        else
+        {
+            // Adaptive sampling of the orbit; more samples in regions of high curvature.
+            // nSamples is the number of samples that will be used for a perfectly circular
+            // orbit. Elliptical orbits will have regions of higher curvature that require
+            // additional sample points.
+            double E = 0.0;
+            double dE = 2 * PI / (double) nSamples;
+            double w = (1 - square(eccentricity));
+            double M0 = E - eccentricity * sin(E);
 
-            // Compute the curvature
-            double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+            while (E < 2 * PI)
+            {
+                // Compute the time tag for this sample
+                double M = E - eccentricity * sin(E);            // Mean anomaly from ecc anomaly
+                double tsamp = t + (M - M0) * period / (2 * PI); // Time from mean anomaly
 
-            // Step amount based on curvature--constrain it so that we don't end up
-            // taking too many samples anywhere. Clamping the curvature to 20 effectively
-            // limits the numbers of samples to 3*nSamples
-            E += dE / max(min(k, 20.0), 1.0);
+                proc.sample(tsamp, positionAtE(E));
+
+                // Compute the curvature
+                double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+
+                // Step amount based on curvature--constrain it so that we don't end up
+                // taking too many samples anywhere. Clamping the curvature to 20 effectively
+                // limits the numbers of samples to 3*nSamples
+                E += dE / max(min(k, 20.0), 1.0);
+            }
         }
     }
 }
