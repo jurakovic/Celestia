@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: true
 
@@ -70,11 +70,20 @@ jobs:
         $env:PATH += ";;${env:VCPKG_INSTALLATION_ROOT}/installed/x64-windows/tools/gettext/bin"
         perl po/translate_resources.pl x64
 
+    - name: Upload build output
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: celestia-x64-build
+        path: |
+          ${{github.workspace}}/x64/Release/celestia.exe
+          ${{github.workspace}}/x64/Release/*.dll
+
     - name: Create installer
       shell: pwsh
       run: ISCC celestia.iss
 
-    - name: Upload artifacts
+    - name: Upload installer
       uses: actions/upload-artifact@v4
       if: success()
       with:
