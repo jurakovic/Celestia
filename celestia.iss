@@ -70,22 +70,14 @@ Name: "{app}\help"
 Name: "{app}\help\CelestiaGuide" 
 
 [Files]
-Source: "x64\Release\celestia.exe";   DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\celestia.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\cspice.dll";     DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\cspice.dll";   DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\jpeg62.dll";      DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\jpeg62.dll";    DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\intl-8.dll";     DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\intl-8.dll";   DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\iconv-2.dll";    DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\iconv-2.dll";  DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\libpng16.dll";   DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\libpng16.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\lua51.dll";      DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\lua51.dll";    DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "x64\Release\zlib1.dll";      DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Win32\Release\zlib1.dll";    DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "x64\Release\celestia.exe";  DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\cspice.dll";    DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\jpeg62.dll";    DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\intl-8.dll";   DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\iconv-2.dll";  DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\libpng16.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\lua51.dll";    DestDir: "{app}"; Flags: ignoreversion
+Source: "x64\Release\zlib1.dll";    DestDir: "{app}"; Flags: ignoreversion
 Source: "start.cel";    DestDir: "{app}"; Flags: ignoreversion
 Source: "celestia.cfg"; DestDir: "{app}"; Flags: ignoreversion
 Source: "demo.cel";     DestDir: "{app}"; Flags: ignoreversion
@@ -99,61 +91,33 @@ Source: "ChangeLog";    DestDir: "{app}"; Flags: ignoreversion;            DestN
 Source: "splash.png";   DestDir: "{app}"; Flags: ignoreversion
 
 ; Languages
-Source: "locale\x64\res_ar.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_be.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_bg.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_de.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_el.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_es.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_fr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_gl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_hu.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_it.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_ja.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_ko.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_lt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_lv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_nb.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_nl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_pl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_pt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_pt_BR.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_ro.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_ru.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_sk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_sv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_tr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_uk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_zh_CN.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "locale\x64\res_zh_TW.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: Is64BitInstallMode
-
-Source: "locale\win32\res_ar.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_be.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_bg.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_de.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_el.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_es.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_fr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_gl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_hu.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_it.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_ja.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_ko.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_lt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_lv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_nb.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_nl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_pl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_pt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_pt_BR.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_ro.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_ru.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_sk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_sv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_tr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_uk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_zh_CN.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "locale\win32\res_zh_TW.dll";    DestDir: "{app}/locale"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "locale\x64\res_ar.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_be.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_bg.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_de.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_el.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_es.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_fr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_gl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_hu.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_it.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_ja.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_ko.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_lt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_lv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_nb.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_nl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_pl.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_pt.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_pt_BR.dll";    DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_ro.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_ru.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_sk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_sv.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_tr.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_uk.dll";       DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_zh_CN.dll";    DestDir: "{app}/locale"; Flags: ignoreversion
+Source: "locale\x64\res_zh_TW.dll";    DestDir: "{app}/locale"; Flags: ignoreversion
 
 Source: "locale\ar\LC_MESSAGES\celestia.mo";                      DestDir: "{app}/locale/ar/LC_MESSAGES"; Flags: ignoreversion
 Source: "locale\ar\LC_MESSAGES\celestia_constellations.mo";       DestDir: "{app}/locale/ar/LC_MESSAGES"; Flags: ignoreversion
