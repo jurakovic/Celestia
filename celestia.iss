@@ -3,7 +3,7 @@
 
 ; This script was tested with Inno Setup Compiler version 5.1.5
 
-#define CelestiaVersion "1.6.4"
+#define CelestiaVersion "1.6.4.1"
 
 [Setup]
 AppName=Celestia
@@ -13,7 +13,7 @@ AppPublisher=Celestia Development Team
 AppPublisherURL=https://celestiaproject.space/
 AppSupportURL=https://celestiaproject.space/
 AppUpdatesURL=https://celestiaproject.space/
-AppCopyright=Copyright (C) 2001-2023 Celestia Development Team
+AppCopyright=Copyright (C) 2001-2026 Celestia Development Team
 OutputBaseFilename=celestia-{#CelestiaVersion}
 DefaultDirName={code:DefDirRoot}\Celestia
 DefaultGroupName=Celestia
