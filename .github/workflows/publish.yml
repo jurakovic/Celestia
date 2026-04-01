@@ -1,0 +1,131 @@
+name: Publish
+
+permissions:
+  contents: write
+  packages: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+        type: string
+
+env:
+  VCPKG_BINARY_SOURCES: 'clear;nuget,GitHub,readwrite'
+
+jobs:
+  build:
+    name: "Build and package Windows"
+    runs-on: windows-latest
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v6
+
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        $vcpkgCommit = 'cff6ed45719c0162fa7065fdac90506a0add812c'
+        pushd $env:VCPKG_INSTALLATION_ROOT
+
+        git fetch origin $vcpkgCommit
+        git reset --hard $vcpkgCommit
+        ./bootstrap-vcpkg.bat
+        ./vcpkg.exe integrate install
+
+        $nugetCmd = vcpkg fetch nuget | Select-Object -Last 1
+        $nugetSource = 'https://nuget.pkg.github.com/jurakovic/index.json'
+        & "$nugetCmd" sources add `
+          -Source "$nugetSource" `
+          -StorePasswordInClearText `
+          -Name "GitHub" `
+          -Username 'jurakovic' `
+          -Password '${{secrets.GITHUB_TOKEN}}'
+        & "$nugetCmd" setapikey '${{secrets.GITHUB_TOKEN}}' `
+          -Source "$nugetSource"
+
+        ./vcpkg.exe --triplet=x64-windows --host-triplet=x64-windows `
+          install --recurse libpng libjpeg-turbo gettext[tools] luajit cspice
+
+        if ($LastExitCode -ne 0) {
+          throw "Failed to install x64-windows dependencies"
+        }
+
+        popd
+
+    - name: Build x64
+      shell: pwsh
+      run: |
+        $installationPath = vswhere.exe -prerelease -latest -property installationPath
+        if ($installationPath -and (Test-Path "$installationPath\Common7\Tools\vsdevcmd.bat")) {
+          & "${env:COMSPEC}" /s /c "`"$installationPath\Common7\Tools\vsdevcmd.bat`" -no_logo -arch=amd64 -host_arch=amd64 && set" | ForEach-Object {
+            $name, $value = $_ -split '=', 2
+            Set-Content env:\"$name" $value
+          }
+        }
+        msbuild celestia.sln /p:Configuration=Release /p:Platform=x64
+        if ($LastExitCode -ne 0) {
+          throw "Failed to build x64"
+        }
+        $env:PATH += ";;${env:VCPKG_INSTALLATION_ROOT}/installed/x64-windows/tools/gettext/bin"
+        perl po/translate_resources.pl x64
+
+    - name: Package build output
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}"
+        New-Item -ItemType Directory -Force -Path "release" | Out-Null
+        Compress-Archive -Path "x64\Release\celestia.exe", "x64\Release\*.dll" -DestinationPath "release\celestia_${version}_x64.zip"
+
+    - name: Create installer
+      shell: pwsh
+      run: ISCC celestia.iss
+
+    - name: Collect release artifacts
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}"
+        Copy-Item "Output\celestia-*.exe" "release\"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: celestia_${{ inputs.version }}
+        path: release/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create git tag
+      run: |
+        git config user.name "jurakovic"
+        git config user.email "17744091+jurakovic@users.noreply.github.com"
+        git tag "v${{ inputs.version }}"
+        git push origin "v${{ inputs.version }}"
+
+    - name: Prepare release files
+      run: |
+        mkdir release
+        cp artifacts/**/* release/
+        cd release && sha256sum * > checksums.txt && cd -
+        find release
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "v${{ inputs.version }}"
+        files: release/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

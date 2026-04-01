@@ -59,4 +59,4 @@ Three files must be updated together before tagging a release:
 | `src/celestia/res/resource.h` | `#define VERSION_STRING "x.x.x.x"` – controls About dialog and splash screen |
 | `src/celestia/res/celestia.rc` | `FILEVERSION`, `PRODUCTVERSION`, `FileVersion`, `ProductVersion` – controls exe file properties |
 
-After updating all three, commit, tag (`vx.x.x.x`), and push. Then create a GitHub release manually and attach both CI artifacts: `celestia-windows-installer` (installer exe) and `celestia-x64-build` (raw exe + DLLs for Celestia Portable users).
+After updating all three, commit and push. Then run the **Publish** workflow (`publish.yml`) with the version number — it will build, tag, package, and create the GitHub release automatically with all artifacts attached.
