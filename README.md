@@ -29,9 +29,9 @@ For full implementation details see [docs/comet-orbits.md](docs/comet-orbits.md)
 
 ## Installation
 
-Releases are available on the [Releases](https://github.com/jurakovic/Celestia/releases) page as a Windows installer.
+Releases are available on the [Releases](https://github.com/jurakovic/Celestia/releases) page as a Windows installer (`celestia-<version>.exe`) and a raw build zip (`celestia_<version>_x64.zip`).
 
-For users of [Celestia Portable](https://portableapps.com/apps/education/celestia_portable), the raw build output (`celestia-x64-build`) attached to each release can be used to replace the exe and DLLs in the portable installation directly, without running the installer.
+For users of [Celestia Portable](https://portableapps.com/apps/education/celestia_portable), the `celestia_<version>_x64.zip` file attached to each release can be used to replace the exe and DLLs in the portable installation directly, without running the installer.
 
 ## Comet Data
 

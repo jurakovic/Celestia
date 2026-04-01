@@ -51,12 +51,13 @@ Key source files for orbital mechanics (the main area of changes in this fork):
 
 ## Releasing a New Version
 
-Three files must be updated together before tagging a release:
+1. Bump the version in all three files:
 
-| File | What to change |
-|------|----------------|
-| `celestia.iss` | `#define CelestiaVersion "x.x.x.x"` |
-| `src/celestia/res/resource.h` | `#define VERSION_STRING "x.x.x.x"` – controls About dialog and splash screen |
-| `src/celestia/res/celestia.rc` | `FILEVERSION`, `PRODUCTVERSION`, `FileVersion`, `ProductVersion` – controls exe file properties |
+   | File | What to change |
+   |------|----------------|
+   | `celestia.iss` | `#define CelestiaVersion "x.x.x.x"` |
+   | `src/celestia/res/resource.h` | `#define VERSION_STRING "x.x.x.x"` – controls About dialog and splash screen |
+   | `src/celestia/res/celestia.rc` | `FILEVERSION`, `PRODUCTVERSION`, `FileVersion`, `ProductVersion` – controls exe file properties |
 
-After updating all three, commit and push. Then run the **Publish** workflow (`publish.yml`) with the version number — it will build, tag, package, and create the GitHub release automatically with all artifacts attached.
+2. Commit and push.
+3. Run the **Publish** workflow (`publish.yml`) manually with the version number (e.g. `1.6.4.1`) — it will build, create the git tag, package all artifacts, and publish the GitHub release automatically.
