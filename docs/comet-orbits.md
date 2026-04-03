@@ -162,17 +162,27 @@ void EllipticalOrbit::getValidRange(double& begin, double& end) const
 
 #### 7. `sample()` – adaptive curvature-based stepping for all orbit types
 
-The existing elliptic sampler uses a curvature factor `k` to shorten the anomaly step near pericenter (where the orbit bends sharply) and lengthen it far out. All three non-elliptic cases now use the same pattern.
+The existing elliptic sampler uses a curvature factor `k` to shorten the anomaly step near pericenter (where the orbit bends sharply) and lengthen it far out. All non-elliptic cases and the closed elliptic case use the same pattern.
+
+The clamp on `k` is **dynamic** rather than fixed at 20. At pericenter, `k ≈ 1/w²` (elliptic) or `1/b²` (hyperbolic). For a typical orbit this is well above 20 but for near-parabolic orbits it can reach 10⁸. The clamp must scale with `w` to keep pericenter segments visually smooth:
+
+```
+kMax = max(20.0, (1/w)^(2/3))   [elliptic cases, w = 1 − e²]
+kMax = max(20.0, (1/b)^(2/3))   [hyperbolic,     b = √(e²−1)]
+```
+
+For typical orbits (e < 0.994) this evaluates to 20 and behaviour is unchanged. For extreme eccentricities (e.g. e = 0.999964 → kMax ≈ 579) it provides enough refinement to keep segments below ~5°.
 
 **Hyperbolic:**
 ```cpp
 double b = sqrt(square(eccentricity) - 1.0);
+double kMax = max(20.0, pow(1.0 / b, 2.0 / 3.0));
 double E = -E_max;
 while (E < E_max)
 {
     proc.sample(tsamp, positionAtE(E));
     double k = b / pow(square(sinh(E)) + square(b) * square(cosh(E)), 1.5);
-    E += dE / max(min(k, 20.0), 1.0);
+    E += dE / max(min(k, kMax), 1.0);
 }
 ```
 
@@ -183,23 +193,62 @@ while (D < D_max)
 {
     proc.sample(tsamp, positionAtE(D));
     double k = 1.0 / pow(1.0 + D * D, 1.5);
-    D += dD / max(min(k, 20.0), 1.0);
+    D += dD / max(min(k, 20.0), 1.0);  // k ≤ 1 always, clamp never active
 }
 ```
 
 **Near-parabolic elliptic (apocenter > 500 AU):**
 ```cpp
 double w = 1.0 - square(eccentricity);
+double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
 double E = -E_max;
 while (E < E_max)
 {
     proc.sample(tsamp, positionAtE(E));
     double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
-    E += dE / max(min(k, 20.0), 1.0);
+    E += dE / max(min(k, kMax), 1.0);
 }
 ```
 
-Clamping `k` to [1, 20] keeps the total vertex count within [nSamples, 20×nSamples].
+**Closed elliptic (apocenter ≤ 500 AU) — two-leg approach:**
+
+The original `[0, 2π]` loop worked fine for typical orbits but broke for very high eccentricities. The adaptive stepper sizes each step from the *current* curvature. Near pericenter, curvature spikes within a zone of width ≈ `w^(1/3)` rad. When `w^(1/3) < dE` (= `2π/nSamples`), the last step before `E = 2π` (pericenter) overshoots entirely — the return leg has no fine samples.
+
+Fix: both legs depart **outward from pericenter** (`E = 0`), so the high-curvature zone is always at the *start* of each traversal. The inbound leg is stepped negatively into a buffer, then emitted in reverse (increasing-time) order.
+
+```cpp
+double w = 1.0 - square(eccentricity);
+double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
+
+// inbound leg: step E from 0 → -PI, emit in reverse (time order: -PI → 0)
+struct Sample { double t; Point3d pos; };
+vector<Sample> inbound;
+{
+    double E = 0.0;
+    while (E > -PI)
+    {
+        double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+        E -= dE / max(min(k, kMax), 1.0);
+        if (E < -PI) E = -PI;
+        inbound.push_back({t + (E - e*sin(E)) * period / (2*PI), positionAtE(E)});
+    }
+}
+for (int i = (int)inbound.size() - 1; i >= 0; i--)
+    proc.sample(inbound[i].t, inbound[i].pos);
+
+// outbound leg: step E from 0 → +PI
+{
+    double E = 0.0;
+    while (E < PI)
+    {
+        proc.sample(t + (E - e*sin(E)) * period / (2*PI), positionAtE(E));
+        double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+        E += dE / max(min(k, kMax), 1.0);
+    }
+}
+```
+
+The total sample count is unchanged (~2–3×nSamples for typical orbits; up to ~5×nSamples for extreme eccentricities). The vector buffer holds ≈ half the samples and is freed immediately after the loop.
 
 ---
 

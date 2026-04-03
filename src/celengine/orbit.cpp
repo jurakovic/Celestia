@@ -378,6 +378,9 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         double meanMotion = 2.0 * PI / period;
         double b = sqrt(square(eccentricity) - 1.0); // semi-minor axis scale
         double dE = 2.0 * E_max / (double) nSamples;  // base step for a circular-curvature orbit
+        // Dynamic clamp: k at pericenter = 1/b^2; scale clamp so segments stay visually smooth
+        // even for near-hyperbolic orbits (b small). Formula: max(20, (1/b)^(2/3)).
+        double kMax = max(20.0, pow(1.0 / b, 2.0 / 3.0));
         double E = -E_max;
         while (E < E_max)
         {
@@ -390,7 +393,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             double sinhE = sinh(E);
             double coshE = cosh(E);
             double k = b / pow(square(sinhE) + square(b) * square(coshE), 1.5);
-            E += dE / max(min(k, 20.0), 1.0);
+            E += dE / max(min(k, kMax), 1.0);
         }
     }
     else if (eccentricity == 1.0)
@@ -428,6 +431,9 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             double meanMotion = 2.0 * PI / period;
             double w = 1.0 - square(eccentricity);
             double dE = 2.0 * E_max / (double) nSamples;
+            // Dynamic clamp: k at pericenter = 1/w^2; scale clamp so segments stay visually smooth
+            // even for very near-parabolic orbits (w small). Formula: max(20, (1/w)^(2/3)).
+            double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
             double E = -E_max;
             while (E < E_max)
             {
@@ -436,7 +442,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
                 proc.sample(tsamp, positionAtE(E));
 
                 double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
-                E += dE / max(min(k, 20.0), 1.0);
+                E += dE / max(min(k, kMax), 1.0);
             }
         }
         else
@@ -445,26 +451,54 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // nSamples is the number of samples that will be used for a perfectly circular
             // orbit. Elliptical orbits will have regions of higher curvature that require
             // additional sample points.
-            double E = 0.0;
             double dE = 2 * PI / (double) nSamples;
             double w = (1 - square(eccentricity));
-            double M0 = E - eccentricity * sin(E);
+            // Dynamic clamp: k at pericenter = 1/w^2; scale clamp so segments stay visually smooth
+            // even for very near-parabolic elliptic orbits (w small). Formula: max(20, (1/w)^(2/3)).
+            // For typical orbits (e < 0.994, w > 0.011) this stays at 20, preserving the original
+            // ~3*nSamples sample budget. For extreme orbits the clamp grows, keeping segments smooth.
+            double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
 
-            while (E < 2 * PI)
+            // Both legs must depart outward from pericenter (E=0) so that the high-curvature zone
+            // is at the START of each leg and the adaptive stepper naturally uses fine steps there.
+            // Stepping toward pericenter does not work: the last step before E=0 is coarse (low
+            // curvature at the current point) and overshoots the tight bend.
+            //
+            // Strategy: collect the inbound leg (E: 0 -> -PI) into a temporary buffer by stepping
+            // outward from E=0 in the negative direction, then emit those samples in reverse
+            // (i.e. in increasing-time order: -PI -> 0) before emitting the outbound leg (0 -> PI).
+
+            // --- inbound leg: step E from 0 to -PI, buffer in reverse ---
+            struct Sample { double t; Point3d pos; };
+            vector<Sample> inbound;
             {
-                // Compute the time tag for this sample
-                double M = E - eccentricity * sin(E);            // Mean anomaly from ecc anomaly
-                double tsamp = t + (M - M0) * period / (2 * PI); // Time from mean anomaly
+                double E = 0.0;
+                while (E > -PI)
+                {
+                    double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                    double step = dE / max(min(k, kMax), 1.0);
+                    E -= step;
+                    if (E < -PI) E = -PI;
+                    double M = E - eccentricity * sin(E);
+                    double tsamp = t + M * period / (2 * PI);
+                    inbound.push_back({tsamp, positionAtE(E)});
+                }
+            }
+            for (int i = (int)inbound.size() - 1; i >= 0; i--)
+                proc.sample(inbound[i].t, inbound[i].pos);
 
-                proc.sample(tsamp, positionAtE(E));
+            // --- outbound leg: step E from 0 to +PI ---
+            {
+                double E = 0.0;
+                while (E < PI)
+                {
+                    double M = E - eccentricity * sin(E);
+                    double tsamp = t + M * period / (2 * PI);
+                    proc.sample(tsamp, positionAtE(E));
 
-                // Compute the curvature
-                double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
-
-                // Step amount based on curvature--constrain it so that we don't end up
-                // taking too many samples anywhere. Clamping the curvature to 20 effectively
-                // limits the numbers of samples to 3*nSamples
-                E += dE / max(min(k, 20.0), 1.0);
+                    double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                    E += dE / max(min(k, kMax), 1.0);
+                }
             }
         }
     }
