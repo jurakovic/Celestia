@@ -405,6 +405,11 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         double D_max = sqrt(max(getBoundingRadius() / pericenterDistance - 1.0, 0.0));
         double meanMotion = 2.0 * PI / period;
         double dD = 2.0 * D_max / (double) nSamples;
+        // Dynamic kMax: scaled so the fine-sampling transition falls near the
+        // inner solar system scale for small-q comets.  kMax = D_max^(4/3) places
+        // the transition at D_trans = D_max^(4/9), i.e. r ~ q * D_max^(8/9).
+        // For SWAN (D_max ~ 268, q ~ 0.007 AU) this gives D_trans ~ 12 (r ~ 1 AU).
+        double kMax = max(20.0, pow(D_max, 4.0 / 3.0));
         double D = -D_max;
         while (D < D_max)
         {
@@ -412,9 +417,12 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(D));
 
-            // Curvature of parabolic D parameterisation: k = 1 / (1 + D^2)^(3/2)
-            double k = 1.0 / pow(1.0 + D * D, 1.5);
-            D += dD / max(min(k, 20.0), 1.0);
+            // Curvature-proportional step: k = kMax at D=0, falls as (1+D²)^(-3/4).
+            // The (3/4) exponent gives step ∝ D^(3/2) for large D, which produces
+            // constant relative chord error (sag/distance) across all distances —
+            // i.e. uniform visual quality from pericenter out to the bounding radius.
+            double k = kMax / pow(1.0 + D * D, 0.75);
+            D += dD / max(min(k, kMax), 1.0);
         }
     }
     else
@@ -441,7 +449,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
                 double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
                 proc.sample(tsamp, positionAtE(E));
 
-                double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
                 E += dE / max(min(k, kMax), 1.0);
             }
         }
@@ -453,7 +461,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // additional sample points.
             double dE = 2 * PI / (double) nSamples;
             double w = (1 - square(eccentricity));
-            // Dynamic clamp: k at pericenter = 1/w^2; scale clamp so segments stay visually smooth
+            // Dynamic clamp: k at pericenter = 1/w; scale clamp so segments stay visually smooth
             // even for very near-parabolic elliptic orbits (w small). Formula: max(20, (1/w)^(2/3)).
             // For typical orbits (e < 0.994, w > 0.011) this stays at 20, preserving the original
             // ~3*nSamples sample budget. For extreme orbits the clamp grows, keeping segments smooth.
@@ -475,7 +483,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
                 double E = 0.0;
                 while (E > -PI)
                 {
-                    double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
                     double step = dE / max(min(k, kMax), 1.0);
                     E -= step;
                     if (E < -PI) E = -PI;
@@ -496,7 +504,7 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
                     double tsamp = t + M * period / (2 * PI);
                     proc.sample(tsamp, positionAtE(E));
 
-                    double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+                    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
                     E += dE / max(min(k, kMax), 1.0);
                 }
             }

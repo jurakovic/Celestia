@@ -164,14 +164,21 @@ void EllipticalOrbit::getValidRange(double& begin, double& end) const
 
 The existing elliptic sampler uses a curvature factor `k` to shorten the anomaly step near pericenter (where the orbit bends sharply) and lengthen it far out. All non-elliptic cases and the closed elliptic case use the same pattern.
 
-The clamp on `k` is **dynamic** rather than fixed at 20. At pericenter, `k ≈ 1/w²` (elliptic) or `1/b²` (hyperbolic). For a typical orbit this is well above 20 but for near-parabolic orbits it can reach 10⁸. The clamp must scale with `w` to keep pericenter segments visually smooth:
+The clamp on `k` is **dynamic** rather than fixed at 20. At pericenter, `k ≈ 1/w` (elliptic) or `1/b²` (hyperbolic). For near-parabolic orbits this can reach 10⁵. The clamp must scale with `w` to keep pericenter segments visually smooth while also ensuring adequate density in the intermediate zone (inner solar system):
 
 ```
-kMax = max(20.0, (1/w)^(2/3))   [elliptic cases, w = 1 − e²]
-kMax = max(20.0, (1/b)^(2/3))   [hyperbolic,     b = √(e²−1)]
+kMax = max(20.0, (1/w)^(2/3))       [elliptic cases, w = 1 − e²]
+kMax = max(20.0, (1/b)^(2/3))       [hyperbolic,     b = √(e²−1)]
+kMax = max(20.0, D_max^(4/3))       [parabolic,      D_max = √(r_max/q − 1)]
 ```
 
-For typical orbits (e < 0.994) this evaluates to 20 and behaviour is unchanged. For extreme eccentricities (e.g. e = 0.999964 → kMax ≈ 579) it provides enough refinement to keep segments below ~5°.
+For typical orbits (e < 0.994) the elliptic/hyperbolic formula evaluates to 20 and behaviour is unchanged. For extreme eccentricities (e.g. e = 0.999964 → kMax ≈ 579) it provides enough refinement to keep segments below ~5°.
+
+The **correct physical curvature** of the ellipse in E-parameterisation is:
+```
+k = √w / (sin²E + w·cos²E)^(3/2)
+```
+An earlier version of this code used `w / (sin²E + w²·cos²E)^(3/2)` (wrong exponents), which under-estimated curvature in the intermediate zone (e.g. 0.1–5 AU for a small-q comet) and produced visibly jagged orbit segments there even when the pericenter region itself was smooth.
 
 **Hyperbolic:**
 ```cpp
@@ -188,12 +195,17 @@ while (E < E_max)
 
 **Parabolic:**
 ```cpp
+// kMax = D_max^(4/3); the (3/4) exponent gives step ∝ D^(3/2) for large D,
+// which produces constant relative chord error (sag/distance) across all distances —
+// uniform visual quality from pericenter out to the bounding radius.
+// For SWAN (D_max≈268, q≈0.007 AU): kMax≈1726, fine sampling out to D≈144 (r≈146 AU).
+double kMax = max(20.0, pow(D_max, 4.0 / 3.0));
 double D = -D_max;
 while (D < D_max)
 {
     proc.sample(tsamp, positionAtE(D));
-    double k = 1.0 / pow(1.0 + D * D, 1.5);
-    D += dD / max(min(k, 20.0), 1.0);  // k ≤ 1 always, clamp never active
+    double k = kMax / pow(1.0 + D * D, 0.75);
+    D += dD / max(min(k, kMax), 1.0);
 }
 ```
 
@@ -205,7 +217,7 @@ double E = -E_max;
 while (E < E_max)
 {
     proc.sample(tsamp, positionAtE(E));
-    double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
     E += dE / max(min(k, kMax), 1.0);
 }
 ```
@@ -227,7 +239,7 @@ vector<Sample> inbound;
     double E = 0.0;
     while (E > -PI)
     {
-        double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+        double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
         E -= dE / max(min(k, kMax), 1.0);
         if (E < -PI) E = -PI;
         inbound.push_back({t + (E - e*sin(E)) * period / (2*PI), positionAtE(E)});
@@ -242,7 +254,7 @@ for (int i = (int)inbound.size() - 1; i >= 0; i--)
     while (E < PI)
     {
         proc.sample(t + (E - e*sin(E)) * period / (2*PI), positionAtE(E));
-        double k = w * pow(square(sin(E)) + w * w * square(cos(E)), -1.5);
+        double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
         E += dE / max(min(k, kMax), 1.0);
     }
 }
