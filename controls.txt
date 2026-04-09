@@ -135,6 +135,8 @@
  Left/Right Arrow ..................... Roll left/right
  Shift+Left/Right Arrow ............... Orbit object: right/left
  Shift+Up/Down Arrow .................. Orbit object: down/up
+ Ctrl+Left/Right Arrow ................ Orbit around ecliptic north pole (stay in solar system plane)
+ Ctrl+Shift+Left/Right Arrow .......... Orbit around selected object's rotation pole
 
 
 --- Navigation via number Pad Keys (with NumLock active) ---

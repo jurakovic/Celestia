@@ -383,6 +383,8 @@ CelestiaCore::CelestiaCore() :
     {
         keysPressed[i] = false;
         shiftKeysPressed[i] = false;
+        ctrlKeysPressed[i] = false;
+        ctrlShiftKeysPressed[i] = false;
     }
     for (i = 0; i < JoyButtonCount; i++)
         joyButtonsPressed[i] = false;
@@ -1244,7 +1246,14 @@ void CelestiaCore::keyDown(int key, int modifiers)
         key = toupper(key);
     if (!(key >= 'A' && key <= 'Z' && (textEnterMode != KbNormal) ))
     {
-        if (modifiers & ShiftKey)
+        if (modifiers & ControlKey)
+        {
+            if (modifiers & ShiftKey)
+                ctrlShiftKeysPressed[key] = true;
+            else
+                ctrlKeysPressed[key] = true;
+        }
+        else if (modifiers & ShiftKey)
             shiftKeysPressed[key] = true;
         else
             keysPressed[key] = true;
@@ -1259,6 +1268,8 @@ void CelestiaCore::keyUp(int key, int)
         key = toupper(key);
     keysPressed[key] = false;
     shiftKeysPressed[key] = false;
+    ctrlKeysPressed[key] = false;
+    ctrlShiftKeysPressed[key] = false;
 }
 
 #ifdef CELX
@@ -2479,6 +2490,15 @@ void CelestiaCore::tick()
         if (shiftKeysPressed[Key_Down])
             q = q * Quatf::xrotation((float) (dt *  KeyRotationAccel * coarseness));
         sim->orbit(q);
+
+        if (ctrlKeysPressed[Key_Left])
+            sim->orbitAroundEclipticPole((float)(dt * -KeyRotationAccel * coarseness));
+        if (ctrlKeysPressed[Key_Right])
+            sim->orbitAroundEclipticPole((float)(dt *  KeyRotationAccel * coarseness));
+        if (ctrlShiftKeysPressed[Key_Left])
+            sim->orbitAroundRotationPole((float)(dt * -KeyRotationAccel * coarseness));
+        if (ctrlShiftKeysPressed[Key_Right])
+            sim->orbitAroundRotationPole((float)(dt *  KeyRotationAccel * coarseness));
     }
 
     // If there's a script running, tick it

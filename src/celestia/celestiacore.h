@@ -437,6 +437,8 @@ class CelestiaCore // : public Watchable<CelestiaCore>
     bool joyButtonsPressed[JoyButtonCount];
     bool keysPressed[KeyCount];
     bool shiftKeysPressed[KeyCount];
+    bool ctrlKeysPressed[KeyCount];
+    bool ctrlShiftKeysPressed[KeyCount];
     double KeyAccel;
 
     MovieCapture* movieCapture;
