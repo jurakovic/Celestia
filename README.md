@@ -29,14 +29,14 @@ All open orbit trails are capped at 500 AU. Near-parabolic elliptic orbits (apoc
 
 For full implementation details see [docs/comet-orbits.md](docs/comet-orbits.md).
 
-### Axis-constrained orbit controls
+### Axis-constrained camera navigation
 
-Two new mouse shortcuts for orbiting around a fixed axis:
+New shortcuts for rotating the camera around a fixed axis:
 
 | Shortcut | Axis |
 |---|---|
-| **Ctrl + Right drag** | Ecliptic north pole — keeps camera in the solar system plane |
-| **Ctrl + Shift + Right drag** | Selected object's rotation pole — orbits around its spin axis |
+| **Ctrl + Right drag** / **Ctrl + Arrow keys** | Ecliptic north pole — keeps camera in the solar system plane |
+| **Ctrl + Shift + Right drag** / **Ctrl + Shift + Arrow keys** | Selected object's rotation pole — rotates around its spin axis |
 
 Works for planets, moons, stars, and galaxies. For full details see [docs/navigation-controls.md](docs/navigation-controls.md).
 
