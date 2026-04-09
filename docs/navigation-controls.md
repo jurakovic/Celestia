@@ -1,17 +1,19 @@
 # Axis-Constrained Camera Navigation
 
-This fork adds two new mouse shortcuts for rotating the camera around a fixed axis, useful for navigating the solar system and inspecting individual objects without the viewpoint drifting "above" or "below" a reference plane.
+This fork adds shortcuts for rotating the camera around a fixed axis, useful for navigating the solar system and inspecting individual objects without the viewpoint drifting "above" or "below" a reference plane.
 
 ## Shortcuts
 
 | Shortcut | Axis | Description |
 |---|---|---|
 | **Ctrl + Right drag** | Ecliptic north pole | Keep camera in the solar system's plane |
+| **Ctrl + Arrow keys** | Ecliptic north pole | Same — keyboard equivalent |
 | **Ctrl + Shift + Right drag** | Selected object's rotation pole | Rotate around the object's spin axis |
+| **Ctrl + Shift + Arrow keys** | Selected object's rotation pole | Same — keyboard equivalent |
 
-Only horizontal mouse motion is used; vertical drag is ignored.
+For mouse shortcuts, only horizontal motion is used; vertical drag is ignored.
 
-## Ecliptic Pole (Ctrl + Right drag)
+## Ecliptic Pole (Ctrl + Right drag / Ctrl + Arrow keys)
 
 Rotates the camera around the **J2000 ecliptic north pole** — the fixed "up" axis of Celestia's universal coordinate system. This axis is the same regardless of which object is selected.
 
@@ -19,7 +21,7 @@ Use this when navigating the solar system at a large scale: it keeps the camera 
 
 Works the same for any selected object type (planet, star, galaxy, etc.) and in any star system, since the ecliptic north pole is a fixed world-space direction.
 
-## Rotation Pole (Ctrl + Shift + Right drag)
+## Rotation Pole (Ctrl + Shift + Right drag / Ctrl + Shift + Arrow keys)
 
 Rotates the camera around the **selected object's rotation pole** — its spin axis — keeping that axis fixed in world space. Behavior depends on the type of selected object:
 
@@ -50,7 +52,10 @@ observer.orbit(selection, q);
 
 This reuses the existing `orbit()` math unchanged, ensuring consistent behavior with the normal right-drag camera motion.
 
+The keyboard shortcuts use the same `orbitAroundEclipticPole()` / `orbitAroundRotationPole()` functions as the mouse, driven from `CelestiaCore::update()` at the same `KeyRotationAccel * coarseness` rate as the existing Shift+Arrow orbit. Key state is tracked in `ctrlKeysPressed[]` and `ctrlShiftKeysPressed[]` arrays, populated in `keyDown()` and cleared in `keyUp()`.
+
 Relevant source files:
 - `src/celengine/body.h` / `body.cpp` — `Body::getRotationPoleDirection(double tdb)`
 - `src/celengine/simulation.h` / `simulation.cpp` — `orbitAroundEclipticPole()`, `orbitAroundRotationPole()`
-- `src/celestia/celestiacore.cpp` — modifier key dispatch in `mouseMove()`
+- `src/celestia/celestiacore.h` — `ctrlKeysPressed[]`, `ctrlShiftKeysPressed[]`
+- `src/celestia/celestiacore.cpp` — modifier key dispatch in `mouseMove()` and `update()`
