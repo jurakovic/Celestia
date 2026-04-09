@@ -15,7 +15,9 @@
 
 ## Fork Notes
 
-This is a personal fork of [Celestia 1.6.x](https://github.com/CelestiaProject/Celestia/tree/1.6.x) with added support for non-elliptic comet orbits (parabolic and hyperbolic).
+This is a personal fork of [Celestia 1.6.x](https://github.com/CelestiaProject/Celestia/tree/1.6.x) with the following additions:
+
+### Non-elliptic comet orbits
 
 Celestia 1.6.x only renders orbits with eccentricity < 1 (elliptic). This fork extends `EllipticalOrbit` to handle all three conic sections:
 
@@ -26,6 +28,17 @@ Celestia 1.6.x only renders orbits with eccentricity < 1 (elliptic). This fork e
 All open orbit trails are capped at 500 AU. Near-parabolic elliptic orbits (apocenter > 500 AU) are treated as open arcs. Adaptive curvature-based sampling is applied to all orbit types for smooth rendering at all zoom levels.
 
 For full implementation details see [docs/comet-orbits.md](docs/comet-orbits.md).
+
+### Axis-constrained orbit controls
+
+Two new mouse shortcuts for orbiting around a fixed axis:
+
+| Shortcut | Axis |
+|---|---|
+| **Ctrl + Right drag** | Ecliptic north pole — keeps camera in the solar system plane |
+| **Ctrl + Shift + Right drag** | Selected object's rotation pole — orbits around its spin axis |
+
+Works for planets, moons, stars, and galaxies. For full details see [docs/navigation-controls.md](docs/navigation-controls.md).
 
 ## Installation
 

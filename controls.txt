@@ -6,6 +6,8 @@
 ------------------------------------------
  Left Drag ................................. Orient camera
  Right drag ............................... Orbit selected object [Shift+Arrow keys]
+ Ctrl+Right Drag ....................... Orbit around ecliptic north pole (stays in solar system plane)
+ Ctrl+Shift+Right Drag ............. Orbit around selected object's rotation pole
  Left+Right Drag left/right ........ Roll view left/right [Left/Right arrows]
  Left+Right Drag up/down ....... Adjust distance to selection [Home/End]
  Wheel ..................................... Adjust distance to selection [Home/End]

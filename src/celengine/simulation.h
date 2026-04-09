@@ -48,6 +48,8 @@ class Simulation
     Universe* getUniverse() const;
 
     void orbit(Quatf q);
+    void orbitAroundEclipticPole(float angle);
+    void orbitAroundRotationPole(float angle);
     void rotate(Quatf q);
     void changeOrbitDistance(float d);
     void setTargetSpeed(float s);

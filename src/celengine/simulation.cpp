@@ -266,6 +266,74 @@ void Simulation::orbit(Quatf q)
 }
 
 
+// Helper: orbit around a world-space (ecliptic J2000) axis by converting it
+// to camera space and calling the standard orbit() function.
+static void orbitAroundWorldAxis(Observer& observer, const Selection& selection,
+                                  const Vec3d& worldAxis, float angle)
+{
+    // orbit() takes a camera-space quaternion. Convert the world-space axis
+    // to camera space: ~orientation maps world → camera (orientation maps camera → world).
+    Quatd camOrientation = observer.getOrientation();
+    Vec3d cameraAxis = worldAxis * (~camOrientation).toMatrix3();
+    cameraAxis.normalize();
+
+    Quatf q;
+    q.setAxisAngle(Vec3f((float)cameraAxis.x, (float)cameraAxis.y, (float)cameraAxis.z), angle);
+    observer.orbit(selection, q);
+}
+
+
+void Simulation::orbitAroundEclipticPole(float angle)
+{
+    // Ecliptic Y is the J2000 ecliptic north pole -- a fixed world-space
+    // direction valid for any star system.
+    orbitAroundWorldAxis(*activeObserver, selection, Vec3d(0.0, 1.0, 0.0), angle);
+}
+
+
+void Simulation::orbitAroundRotationPole(float angle)
+{
+    double t = activeObserver->getTime();
+    Vec3d poleAxis(0.0, 1.0, 0.0); // fallback: ecliptic north
+
+    if (selection.getType() == Selection::Type_Body)
+    {
+        Body* body = selection.body();
+        if (body != NULL)
+            poleAxis = body->getRotationPoleDirection(t);
+    }
+    else if (selection.getType() == Selection::Type_Star)
+    {
+        Star* star = selection.star();
+        if (star != NULL)
+        {
+            const RotationModel* rm = star->getRotationModel();
+            if (rm != NULL)
+            {
+                Vec3d av = rm->angularVelocityAtTime(t);
+                double len = av.length();
+                if (len > 0.0)
+                    poleAxis = av / len;
+            }
+        }
+    }
+    else if (selection.getType() == Selection::Type_DeepSky)
+    {
+        DeepSkyObject* dso = selection.deepsky();
+        if (dso != NULL)
+        {
+            // DSO orientation is body→world (opposite of Body's convention),
+            // so Y in world space = Y * orientation.toMatrix3() (no inversion).
+            Quatf qf = dso->getOrientation();
+            Quatd qd(qf.w, qf.x, qf.y, qf.z);
+            poleAxis = Vec3d(0.0, 1.0, 0.0) * qd.toMatrix3();
+        }
+    }
+
+    orbitAroundWorldAxis(*activeObserver, selection, poleAxis, angle);
+}
+
+
 // Exponential camera dolly--move toward or away from the selected object
 // at a rate dependent on the observer's distance from the object.
 void Simulation::changeOrbitDistance(float d)

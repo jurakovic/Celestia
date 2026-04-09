@@ -604,6 +604,27 @@ Quatd Body::getEclipticToBodyFixed(double tdb) const
 }
 
 
+/*! Return the rotation pole direction (body-fixed Y axis) in ecliptic space.
+ *  Uses angularVelocityAtTime() from the rotation model, which returns the
+ *  angular velocity vector -- its direction is unambiguously the rotation pole,
+ *  unaffected by the daily spin angle. Result is a unit vector in J2000
+ *  ecliptic coordinates.
+ */
+Vec3d Body::getRotationPoleDirection(double tdb) const
+{
+    const TimelinePhase* phase = timeline->findPhase(tdb);
+    const RotationModel* rm = phase->rotationModel();
+    Vec3d av = rm->angularVelocityAtTime(tdb);
+    double len = av.length();
+    if (len == 0.0)
+        return Vec3d(0.0, 1.0, 0.0); // no rotation: fall back to ecliptic north
+    Vec3d pole = av / len;
+    // av is in body-frame space; transform to ecliptic space.
+    // bodyFrame->getOrientation() maps body-frame → ecliptic (v_ecl = v_frame * M).
+    return pole * phase->bodyFrame()->getOrientation(tdb).toMatrix3();
+}
+
+
 // The body-fixed coordinate system has an origin at the center of the
 // body, y-axis parallel to the rotation axis, x-axis through the prime
 // meridian, and z-axis at a right angle the xy plane.

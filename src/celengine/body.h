@@ -269,6 +269,7 @@ class Body
     Quatd getEclipticToEquatorial(double) const;
     Quatd getEclipticToBodyFixed(double) const;
     Mat4d getBodyFixedToAstrocentric(double) const;
+    Vec3d getRotationPoleDirection(double tdb) const;
 
     Vec3d planetocentricToCartesian(double lon, double lat, double alt) const;
     Vec3d planetocentricToCartesian(const Vec3d& lonLatAlt) const;

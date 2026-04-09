@@ -1029,6 +1029,21 @@ void CelestiaCore::mouseMove(float dx, float dy, int modifiers)
                 flash(buf);
             }
         }
+        else if (checkMask(modifiers, RightButton | ControlKey | ShiftKey))
+        {
+            // Orbit around the selected body's rotation pole (body-fixed Y axis
+            // in ecliptic space). Only horizontal drag is used.
+            float coarseness = ComputeRotationCoarseness(*sim);
+            sim->orbitAroundRotationPole(dx / width * coarseness);
+        }
+        else if (checkMask(modifiers, RightButton | ControlKey))
+        {
+            // Orbit around the ecliptic north pole (J2000 ecliptic Y axis) --
+            // a fixed world-space direction, consistent across all star systems.
+            // Only horizontal drag is used.
+            float coarseness = ComputeRotationCoarseness(*sim);
+            sim->orbitAroundEclipticPole(dx / width * coarseness);
+        }
         else
         {
             Quatf q(1);
