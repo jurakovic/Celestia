@@ -572,8 +572,23 @@ BOOL APIENTRY ControlsHelpProc(HWND hDlg,
     switch (message)
     {
     case WM_INITDIALOG:
+        {
+            HFONT hFont = CreateFont(-13, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                     DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                     CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas");
+            if (hFont)
+                SendDlgItemMessage(hDlg, IDC_TEXT_CONTROLSHELP, WM_SETFONT, (WPARAM)hFont, FALSE);
+        }
         LoadItemTextFromFile(hDlg, IDC_TEXT_CONTROLSHELP, const_cast<char*>(LocaleFilename("controls.txt").c_str()));
         return(TRUE);
+
+    case WM_DESTROY:
+        {
+            HFONT hFont = (HFONT)SendDlgItemMessage(hDlg, IDC_TEXT_CONTROLSHELP, WM_GETFONT, 0, 0);
+            if (hFont)
+                DeleteObject(hFont);
+        }
+        break;
 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
