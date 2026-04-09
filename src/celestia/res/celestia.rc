@@ -1911,10 +1911,10 @@ END
 VS_VERSION_INFO VERSIONINFO
 
 
- FILEVERSION 1,6,4,3
+ FILEVERSION 1,6,4,4
 
 
- PRODUCTVERSION 1,6,4,3
+ PRODUCTVERSION 1,6,4,4
 
 
  FILEFLAGSMASK 0x3fL
@@ -1965,7 +1965,7 @@ BEGIN
             VALUE "FileDescription", "celestia"
 
 
-            VALUE "FileVersion", "1, 6, 4, 3"
+            VALUE "FileVersion", "1, 6, 4, 4"
 
 
             VALUE "InternalName", "celestia"
@@ -1980,7 +1980,7 @@ BEGIN
             VALUE "ProductName", "  celestia"
 
 
-            VALUE "ProductVersion", "1, 6, 4, 3"
+            VALUE "ProductVersion", "1, 6, 4, 4"
 
 
         END
