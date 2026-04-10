@@ -10,6 +10,8 @@
 #ifndef _STAR_H_
 #define _STAR_H_
 
+#include <list>
+#include <string>
 #include <vector>
 #include <celutil/basictypes.h>
 #include <celutil/reshandle.h>
@@ -22,6 +24,7 @@
 #include <celengine/multitexture.h>
 
 class Orbit;
+class ReferenceMark;
 class Star;
 
 class StarDetails
@@ -268,6 +271,11 @@ public:
     void addOrbitingStar(Star*);
     inline const std::vector<Star*>* getOrbitingStars() const;
 
+    void addReferenceMark(ReferenceMark* refMark);
+    void removeReferenceMark(const std::string& tag);
+    ReferenceMark* findReferenceMark(const std::string& tag) const;
+    const std::list<ReferenceMark*>* getReferenceMarks() const;
+
     // Accessor methods that delegate to StarDetails
     float getRadius() const;
     inline float getTemperature() const;
@@ -295,6 +303,7 @@ private:
     Point3f position;
     float absMag;
     StarDetails* details;
+    std::list<ReferenceMark*>* referenceMarks;
 };
 
 
@@ -302,7 +311,8 @@ Star::Star() :
     catalogNumber(InvalidCatalogNumber),
     position(0, 0, 0),
     absMag(4.83f),
-    details(NULL)
+    details(NULL),
+    referenceMarks(NULL)
 {
 }
 

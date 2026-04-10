@@ -15,6 +15,7 @@
 #include "celestia.h"
 #include "astro.h"
 #include "orbit.h"
+#include "referencemark.h"
 #include "star.h"
 #include "texmanager.h"
 
@@ -986,6 +987,62 @@ Star::~Star()
     if (!details->shared())
         delete details;
 #endif
+    if (referenceMarks != NULL)
+    {
+        for (list<ReferenceMark*>::iterator iter = referenceMarks->begin();
+             iter != referenceMarks->end(); ++iter)
+        {
+            delete *iter;
+        }
+        delete referenceMarks;
+    }
+}
+
+
+void
+Star::addReferenceMark(ReferenceMark* refMark)
+{
+    if (referenceMarks == NULL)
+        referenceMarks = new list<ReferenceMark*>();
+    referenceMarks->push_back(refMark);
+}
+
+
+void
+Star::removeReferenceMark(const string& tag)
+{
+    if (referenceMarks != NULL)
+    {
+        ReferenceMark* refMark = findReferenceMark(tag);
+        if (refMark != NULL)
+        {
+            referenceMarks->remove(refMark);
+            delete refMark;
+        }
+    }
+}
+
+
+ReferenceMark*
+Star::findReferenceMark(const string& tag) const
+{
+    if (referenceMarks != NULL)
+    {
+        for (list<ReferenceMark*>::const_iterator iter = referenceMarks->begin();
+             iter != referenceMarks->end(); ++iter)
+        {
+            if ((*iter)->getTag() == tag)
+                return *iter;
+        }
+    }
+    return NULL;
+}
+
+
+const list<ReferenceMark*>*
+Star::getReferenceMarks() const
+{
+    return referenceMarks;
 }
 
 

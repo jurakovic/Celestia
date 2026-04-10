@@ -4947,14 +4947,29 @@ void CelestiaCore::setHistoryCurrent(vector<Url>::size_type curr)
  */
 void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
 {
-    Body* body = NULL;
-
     if (sel.empty())
-        body = getSimulation()->getSelection().body();
-    else
-        body = sel.body();
-    
-    // Reference marks can only be set for solar system bodies.
+        sel = getSimulation()->getSelection();
+
+    Star* star = sel.star();
+    if (star != NULL)
+    {
+        if (star->findReferenceMark(refMark))
+        {
+            star->removeReferenceMark(refMark);
+        }
+        else
+        {
+            if (refMark == "body axes")
+                star->addReferenceMark(new StarBodyAxisArrows(*star));
+            else if (refMark == "frame axes")
+                star->addReferenceMark(new StarFrameAxisArrows(*star));
+        }
+        return;
+    }
+
+    Body* body = sel.body();
+
+    // Reference marks can only be set for solar system bodies or stars.
     if (body == NULL)
         return;
 
@@ -5025,18 +5040,17 @@ void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
  */
 bool CelestiaCore::referenceMarkEnabled(const string& refMark, Selection sel) const
 {
-    Body* body = NULL;
-
     if (sel.empty())
-        body = getSimulation()->getSelection().body();
-    else
-        body = sel.body();
-    
-    // Reference marks can only be set for solar system bodies.
+        sel = getSimulation()->getSelection();
+
+    Star* star = sel.star();
+    if (star != NULL)
+        return star->findReferenceMark(refMark) != NULL;
+
+    Body* body = sel.body();
     if (body == NULL)
         return false;
-    else
-        return body->findReferenceMark(refMark) != NULL;
+    return body->findReferenceMark(refMark) != NULL;
 }
 
 

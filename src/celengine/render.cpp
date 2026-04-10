@@ -9430,6 +9430,21 @@ void StarRenderer::process(const Star& star, float distance, float appMag)
             rle.discSizeInPixels = discSizeInPixels;
             rle.appMag = appMag;
             renderList->insert(renderList->end(), rle);
+
+            const list<ReferenceMark*>* refMarks = star.getReferenceMarks();
+            if (refMarks != NULL)
+            {
+                for (list<ReferenceMark*>::const_iterator rmIter = refMarks->begin();
+                     rmIter != refMarks->end(); ++rmIter)
+                {
+                    const ReferenceMark* rm = *rmIter;
+                    rle.renderableType = RenderListEntry::RenderableReferenceMark;
+                    rle.refMark = rm;
+                    rle.isOpaque = rm->isOpaque();
+                    rle.radius = rm->boundingSphereRadius();
+                    renderList->insert(renderList->end(), rle);
+                }
+            }
         }
     }
 }
@@ -9657,6 +9672,21 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
             rle.discSizeInPixels = discSizeInPixels;
             rle.appMag = appMag;
             renderList->insert(renderList->end(), rle);
+
+            const list<ReferenceMark*>* refMarks = star.getReferenceMarks();
+            if (refMarks != NULL)
+            {
+                for (list<ReferenceMark*>::const_iterator rmIter = refMarks->begin();
+                     rmIter != refMarks->end(); ++rmIter)
+                {
+                    const ReferenceMark* rm = *rmIter;
+                    rle.renderableType = RenderListEntry::RenderableReferenceMark;
+                    rle.refMark = rm;
+                    rle.isOpaque = rm->isOpaque();
+                    rle.radius = rm->boundingSphereRadius();
+                    renderList->insert(renderList->end(), rle);
+                }
+            }
         }
     }
 }

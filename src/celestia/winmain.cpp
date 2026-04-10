@@ -1674,6 +1674,12 @@ VOID APIENTRY handlePopupMenu(HWND hwnd,
             AppendMenu(hMenu, MF_SEPARATOR, 0, 0);
             AppendMenu(hMenu, MF_STRING, ID_NAVIGATION_GOTO, UTF8ToCurrentCP(_("&Goto")).c_str());
             AppendMenu(hMenu, MF_STRING, ID_INFO, UTF8ToCurrentCP(_("&Info")).c_str());
+            HMENU starRefVectorMenu = CreatePopupMenu();
+            AppendMenu(hMenu, MF_POPUP | MF_STRING, (UINT_PTR) starRefVectorMenu, UTF8ToCurrentCP(_("&Reference Marks")).c_str());
+            AppendMenu(starRefVectorMenu, MF_STRING, ID_RENDER_BODY_AXES, UTF8ToCurrentCP(_("Show Body Axes")).c_str());
+            AppendMenu(starRefVectorMenu, MF_STRING, ID_RENDER_FRAME_AXES, UTF8ToCurrentCP(_("Show Frame Axes")).c_str());
+            CheckMenuItem(starRefVectorMenu, ID_RENDER_BODY_AXES,  sel.star()->findReferenceMark("body axes")  ? MF_CHECKED : MF_UNCHECKED);
+            CheckMenuItem(starRefVectorMenu, ID_RENDER_FRAME_AXES, sel.star()->findReferenceMark("frame axes") ? MF_CHECKED : MF_UNCHECKED);
 
             SolarSystemCatalog* solarSystemCatalog = sim->getUniverse()->getSolarSystemCatalog();
             SolarSystemCatalog::iterator iter = solarSystemCatalog->find(sel.star()->getCatalogNumber());

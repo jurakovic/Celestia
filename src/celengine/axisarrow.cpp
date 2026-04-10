@@ -15,6 +15,7 @@
 #include "selection.h"
 #include "frame.h"
 #include "body.h"
+#include "star.h"
 #include "timelinephase.h"
 
 using namespace std;
@@ -354,17 +355,11 @@ AxesReferenceMark::setOpacity(float _opacity)
 }
 
 
-void
-AxesReferenceMark::render(Renderer* /* renderer */,
-                          const Point3f& /* position */,
-                          float /* discSize */,
-                          double tdb) const
+static void
+RenderAxesImpl(float size, float opacity, const Quatd& q)
 {
-    Quatd q = getOrientation(tdb);
-
     if (opacity == 1.0f)
     {
-        // Enable depth buffering
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -386,27 +381,8 @@ AxesReferenceMark::render(Renderer* /* renderer */,
     glPushMatrix();
     glRotate(Quatf((float) q.w, (float) q.x, (float) q.y, (float) q.z));
     glScalef(size, size, size);
-	
+
     glDisable(GL_LIGHTING);
-
-#if 0
-    // Simple line axes
-    glBegin(GL_LINES);
-	
-    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(-1.0f, 0.0f, 0.0f);
-
-    glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 1.0f);
-
-    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 1.0f, 0.0f);
-	
-    glEnd();
-#endif
 
     float shaftLength = 0.85f;
     float headLength = 0.10f;
@@ -414,7 +390,7 @@ AxesReferenceMark::render(Renderer* /* renderer */,
     float headRadius = 0.025f;
     unsigned int nSections = 30;
     float labelScale = 0.1f;
-	
+
     // x-axis
     glPushMatrix();
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
@@ -444,7 +420,7 @@ AxesReferenceMark::render(Renderer* /* renderer */,
     glScalef(labelScale, labelScale, labelScale);
     RenderZ();
     glPopMatrix();
-	
+
     glPopMatrix();
 
     glDisable(GL_DEPTH_TEST);
@@ -452,6 +428,16 @@ AxesReferenceMark::render(Renderer* /* renderer */,
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+}
+
+
+void
+AxesReferenceMark::render(Renderer* /* renderer */,
+                          const Point3f& /* position */,
+                          float /* discSize */,
+                          double tdb) const
+{
+    RenderAxesImpl(size, opacity, getOrientation(tdb));
 }
 
 
@@ -584,4 +570,81 @@ Quatd
 FrameAxisArrows::getOrientation(double tdb) const
 {
     return ~body.getEclipticToFrame(tdb);
+}
+
+
+/****** StarBodyAxisArrows implementation ******/
+
+StarBodyAxisArrows::StarBodyAxisArrows(const Star& _star) :
+    star(_star),
+    size(_star.getRadius() * 2.0f),
+#ifdef USE_HDR
+    opacity(0.0f)
+#else
+    opacity(1.0f)
+#endif
+{
+    setTag("body axes");
+}
+
+float
+StarBodyAxisArrows::boundingSphereRadius() const
+{
+    return size;
+}
+
+bool
+StarBodyAxisArrows::isOpaque() const
+{
+    return opacity == 1.0f;
+}
+
+void
+StarBodyAxisArrows::render(Renderer* /* renderer */,
+                           const Point3f& /* position */,
+                           float /* discSize */,
+                           double tdb) const
+{
+    const RotationModel* rm = star.getRotationModel();
+    Quatd q(1.0, 0.0, 0.0, 0.0);
+    if (rm != NULL)
+        q = rm->orientationAtTime(tdb);
+    RenderAxesImpl(size, opacity, ~(Quatd::yrotation(PI) * q));
+}
+
+
+/****** StarFrameAxisArrows implementation ******/
+
+StarFrameAxisArrows::StarFrameAxisArrows(const Star& _star) :
+    star(_star),
+    size(_star.getRadius() * 2.0f),
+#ifdef USE_HDR
+    opacity(0.0f)
+#else
+    opacity(0.5f)
+#endif
+{
+    setTag("frame axes");
+}
+
+float
+StarFrameAxisArrows::boundingSphereRadius() const
+{
+    return size;
+}
+
+bool
+StarFrameAxisArrows::isOpaque() const
+{
+    return opacity == 1.0f;
+}
+
+void
+StarFrameAxisArrows::render(Renderer* /* renderer */,
+                            const Point3f& /* position */,
+                            float /* discSize */,
+                            double /* tdb */) const
+{
+    // Stars are in the ecliptic frame, so frame axes = ecliptic axes (identity orientation).
+    RenderAxesImpl(size, opacity, Quatd(1.0, 0.0, 0.0, 0.0));
 }

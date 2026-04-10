@@ -16,6 +16,7 @@
 #include <celengine/selection.h>
 
 class Body;
+class Star;
 
 
 class ArrowReferenceMark : public ReferenceMark
@@ -130,6 +131,35 @@ public:
 
 private:
     Selection target;
+};
+
+class StarBodyAxisArrows : public ReferenceMark
+{
+public:
+    StarBodyAxisArrows(const Star& _star);
+    void render(Renderer* renderer, const Point3f& position, float discSize, double tdb) const;
+    float boundingSphereRadius() const;
+    bool isOpaque() const;
+
+private:
+    const Star& star;
+    float size;
+    float opacity;
+};
+
+
+class StarFrameAxisArrows : public ReferenceMark
+{
+public:
+    StarFrameAxisArrows(const Star& _star);
+    void render(Renderer* renderer, const Point3f& position, float discSize, double tdb) const;
+    float boundingSphereRadius() const;
+    bool isOpaque() const;
+
+private:
+    const Star& star;
+    float size;
+    float opacity;
 };
 
 #endif // _CELENGINE_AXISARROW_H_
