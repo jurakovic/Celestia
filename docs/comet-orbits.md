@@ -222,45 +222,26 @@ while (E < E_max)
 }
 ```
 
-**Closed elliptic (apocenter ≤ 500 AU) — two-leg approach:**
+**Closed elliptic (apocenter ≤ 500 AU) — single forward pass:**
 
-The original `[0, 2π]` loop worked fine for typical orbits but broke for very high eccentricities. The adaptive stepper sizes each step from the *current* curvature. Near pericenter, curvature spikes within a zone of width ≈ `w^(1/3)` rad. When `w^(1/3) < dE` (= `2π/nSamples`), the last step before `E = 2π` (pericenter) overshoots entirely — the return leg has no fine samples.
-
-Fix: both legs depart **outward from pericenter** (`E = 0`), so the high-curvature zone is always at the *start* of each traversal. The inbound leg is stepped negatively into a buffer, then emitted in reverse (increasing-time) order.
+A single `[0, 2π]` loop suffices, sizing each step from the *current* curvature. The key is the correct curvature factor `k = sqrt(w)·(sin²E + w·cos²E)^-1.5`: the high-curvature zone around pericenter is ≈ `sqrt(w)` rad wide, so as `E` approaches the bend (from either side) `k` grows as `sqrt(w)/δ³` and the step (∝ `1/k`) shrinks smoothly *before* arriving — it never overshoots.
 
 ```cpp
 double w = 1.0 - square(eccentricity);
 double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
-
-// inbound leg: step E from 0 → -PI, emit in reverse (time order: -PI → 0)
-struct Sample { double t; Point3d pos; };
-vector<Sample> inbound;
+double E = 0.0;
+double M0 = E - eccentricity * sin(E);
+while (E < 2 * PI)
 {
-    double E = 0.0;
-    while (E > -PI)
-    {
-        double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
-        E -= dE / max(min(k, kMax), 1.0);
-        if (E < -PI) E = -PI;
-        inbound.push_back({t + (E - e*sin(E)) * period / (2*PI), positionAtE(E)});
-    }
-}
-for (int i = (int)inbound.size() - 1; i >= 0; i--)
-    proc.sample(inbound[i].t, inbound[i].pos);
-
-// outbound leg: step E from 0 → +PI
-{
-    double E = 0.0;
-    while (E < PI)
-    {
-        proc.sample(t + (E - e*sin(E)) * period / (2*PI), positionAtE(E));
-        double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
-        E += dE / max(min(k, kMax), 1.0);
-    }
+    proc.sample(t + (E - e*sin(E) - M0) * period / (2*PI), positionAtE(E));
+    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
+    E += dE / max(min(k, kMax), 1.0);
 }
 ```
 
-The total sample count is unchanged (~2–3×nSamples for typical orbits; up to ~5×nSamples for extreme eccentricities). The vector buffer holds ≈ half the samples and is freed immediately after the loop.
+> **Historical note:** an earlier revision used a two-leg buffered approach (both legs stepping outward from pericenter, the inbound leg emitted in reverse) to avoid overshooting the pericenter bend. That was a workaround for a *buggy* curvature formula (`w·(sin²E + w²·cos²E)^-1.5`) whose zone was only ≈ `w` rad wide — far narrower than a step, so the loop leapt over it. Once the curvature formula was corrected (zone ≈ `sqrt(w)`, ~120× wider for `e ≈ 0.99996`) the overshoot disappeared and the buffer became redundant, so it was removed.
+
+The total sample count is ~2–3×nSamples for typical orbits, up to ~5×nSamples for extreme eccentricities.
 
 ---
 

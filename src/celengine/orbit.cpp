@@ -467,46 +467,20 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // ~3*nSamples sample budget. For extreme orbits the clamp grows, keeping segments smooth.
             double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
 
-            // Both legs must depart outward from pericenter (E=0) so that the high-curvature zone
-            // is at the START of each leg and the adaptive stepper naturally uses fine steps there.
-            // Stepping toward pericenter does not work: the last step before E=0 is coarse (low
-            // curvature at the current point) and overshoots the tight bend.
-            //
-            // Strategy: collect the inbound leg (E: 0 -> -PI) into a temporary buffer by stepping
-            // outward from E=0 in the negative direction, then emit those samples in reverse
-            // (i.e. in increasing-time order: -PI -> 0) before emitting the outbound leg (0 -> PI).
-
-            // --- inbound leg: step E from 0 to -PI, buffer in reverse ---
-            struct Sample { double t; Point3d pos; };
-            vector<Sample> inbound;
+            // With the correct curvature k = sqrt(w)*(sin^2 E + w*cos^2 E)^-1.5 the high-curvature
+            // zone around pericenter is ~sqrt(w) wide, so the step (proportional to 1/k) shrinks
+            // smoothly long before reaching the bend. A single forward pass over E resolves
+            // pericenter from either side without overshooting.
+            double E = 0.0;
+            double M0 = E - eccentricity * sin(E);
+            while (E < 2 * PI)
             {
-                double E = 0.0;
-                while (E > -PI)
-                {
-                    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
-                    double step = dE / max(min(k, kMax), 1.0);
-                    E -= step;
-                    if (E < -PI) E = -PI;
-                    double M = E - eccentricity * sin(E);
-                    double tsamp = t + M * period / (2 * PI);
-                    inbound.push_back({tsamp, positionAtE(E)});
-                }
-            }
-            for (int i = (int)inbound.size() - 1; i >= 0; i--)
-                proc.sample(inbound[i].t, inbound[i].pos);
+                double M = E - eccentricity * sin(E);
+                double tsamp = t + (M - M0) * period / (2 * PI);
+                proc.sample(tsamp, positionAtE(E));
 
-            // --- outbound leg: step E from 0 to +PI ---
-            {
-                double E = 0.0;
-                while (E < PI)
-                {
-                    double M = E - eccentricity * sin(E);
-                    double tsamp = t + M * period / (2 * PI);
-                    proc.sample(tsamp, positionAtE(E));
-
-                    double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
-                    E += dE / max(min(k, kMax), 1.0);
-                }
+                double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
+                E += dE / max(min(k, kMax), 1.0);
             }
         }
     }
