@@ -27,7 +27,7 @@ static const double ORBITAL_VELOCITY_DIFF_DELTA = 1.0 / 1440.0;
 // Maximum distance at which any orbit trail is drawn (500 AU in km).
 // Applies to all orbit types: elliptic orbits whose apocenter exceeds this
 // value are treated as open arcs, same as parabolic/hyperbolic orbits.
-static const double MaxOrbitRadius = 500.0 * 1.4959787e8;
+static const double MaxOrbitRadius = 500.0 * KM_PER_AU;
 
 
 EllipticalOrbit::EllipticalOrbit(double _pericenterDistance,
@@ -471,6 +471,11 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // zone around pericenter is ~sqrt(w) wide, so the step (proportional to 1/k) shrinks
             // smoothly long before reaching the bend. A single forward pass over E resolves
             // pericenter from either side without overshooting.
+            //
+            // Time tags here are relative to the passed-in reference time t (pericenter at E=0),
+            // spanning exactly one period. This differs from the open-arc branches above, which
+            // must use absolute epoch/meanAnomalyAtEpoch times so they align with the partial
+            // window returned by getValidRange(); a closed periodic loop has no such window.
             double E = 0.0;
             double M0 = E - eccentricity * sin(E);
             while (E < 2 * PI)

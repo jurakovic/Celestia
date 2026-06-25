@@ -153,6 +153,15 @@ CreateEllipticalOrbit(Hash* orbitData,
     // distance.
     if (semiMajorAxis != 0.0)
     {
+        // Parabolic orbits (ecc == 1) have an infinite semi-major axis, so
+        // a * (1 - e) collapses to zero.  Such orbits must be specified with
+        // PericenterDistance; reject SemiMajorAxis rather than silently
+        // producing a degenerate (invisible) orbit.
+        if (eccentricity == 1.0)
+        {
+            clog << "Parabolic orbit (Eccentricity 1) requires PericenterDistance, not SemiMajorAxis!  Skipping planet . . .\n";
+            return NULL;
+        }
         // For hyperbolic orbits (ecc > 1) the semi-major axis is negative by
         // convention.  Accept a positive value from the user and negate it so
         // that pericenterDistance comes out positive.

@@ -239,6 +239,8 @@ while (E < 2 * PI)
 }
 ```
 
+**Time tags differ between the closed and open branches.** The closed-elliptic loop tags samples relative to the passed-in reference time `t` (`t + (M − M₀)·period/2π`), spanning exactly one period. The open-arc branches (hyperbolic, parabolic, near-parabolic elliptic) instead use *absolute* times derived from the orbit's own elements (`tsamp = epoch + (M − meanAnomalyAtEpoch)/n`) so they align with the partial window returned by `getValidRange()`. A closed periodic loop has no such window, so the simpler `t`-relative form is sufficient there.
+
 > **Historical note:** an earlier revision used a two-leg buffered approach (both legs stepping outward from pericenter, the inbound leg emitted in reverse) to avoid overshooting the pericenter bend. That was a workaround for a *buggy* curvature formula (`w·(sin²E + w²·cos²E)^-1.5`) whose zone was only ≈ `w` rad wide — far narrower than a step, so the loop leapt over it. Once the curvature formula was corrected (zone ≈ `sqrt(w)`, ~120× wider for `e ≈ 0.99996`) the overshoot disappeared and the buffer became redundant, so it was removed.
 
 The total sample count is ~2–3×nSamples for typical orbits, up to ~5×nSamples for extreme eccentricities.
