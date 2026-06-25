@@ -243,7 +243,7 @@ while (E < 2 * PI)
 
 > **Historical note:** an earlier revision used a two-leg buffered approach (both legs stepping outward from pericenter, the inbound leg emitted in reverse) to avoid overshooting the pericenter bend. That was a workaround for a *buggy* curvature formula (`w·(sin²E + w²·cos²E)^-1.5`) whose zone was only ≈ `w` rad wide — far narrower than a step, so the loop leapt over it. Once the curvature formula was corrected (zone ≈ `sqrt(w)`, ~120× wider for `e ≈ 0.99996`) the overshoot disappeared and the buffer became redundant, so it was removed.
 
-The total sample count is ~2–3×nSamples for typical orbits, up to ~5×nSamples for extreme eccentricities.
+The total sample count is ~2–3×nSamples for typical orbits, up to ~5×nSamples for extreme eccentricities. A hard safety cap of **50×nSamples** bounds the emitted point count so that degenerate orbital elements (e.g. a near-zero pericenter distance, or an eccentricity numerically indistinguishable from 1) cannot drive it to a runaway value; the cap is never reached by real comets.
 
 ---
 

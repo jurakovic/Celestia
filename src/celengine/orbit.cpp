@@ -366,6 +366,21 @@ void EllipticalOrbit::getValidRange(double& begin, double& end) const
 void EllipticalOrbit::sample(double, double t, int nSamples,
                              OrbitSampleProc& proc) const
 {
+    // Safety cap on the total emitted point count. Adaptive curvature stepping
+    // emits ~5-20x nSamples for realistic comets; bound it at 50x so degenerate
+    // orbital elements (e.g. a near-zero pericenter distance, or e numerically
+    // indistinguishable from 1) cannot drive the sample count to a runaway value.
+    //
+    // The open-arc loops below sweep from one end to the other (-max -> +max),
+    // so when this cap is hit the orbit is truncated inbound-first: the outbound
+    // leg past pericenter is dropped, leaving a one-sided partial arc. This is an
+    // acceptable failure mode because the cap is only ever reachable with invalid
+    // elements; no real comet comes close. Making the truncation symmetric would
+    // require sampling outward from pericenter in both directions (the buffered
+    // two-leg pattern), which isn't worth the complexity for malformed input.
+    const int maxSamples = 50 * nSamples;
+    int nEmitted = 0;
+
     if (eccentricity > 1.0)
     {
         // Sample both the inbound and outbound legs of the hyperbolic orbit,
@@ -382,11 +397,12 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         // even for near-hyperbolic orbits (b small). Formula: max(20, (1/b)^(2/3)).
         double kMax = max(20.0, pow(1.0 / b, 2.0 / 3.0));
         double E = -E_max;
-        while (E < E_max)
+        while (E < E_max && nEmitted < maxSamples)
         {
             double M = eccentricity * sinh(E) - E;
             double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(E));
+            nEmitted++;
 
             // Curvature of hyperbolic anomaly parameterisation:
             // k = b / (sinh^2(E) + b^2*cosh^2(E))^(3/2)
@@ -411,11 +427,12 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
         // For SWAN (D_max ~ 268, q ~ 0.007 AU) this gives D_trans ~ 12 (r ~ 1 AU).
         double kMax = max(20.0, pow(D_max, 4.0 / 3.0));
         double D = -D_max;
-        while (D < D_max)
+        while (D < D_max && nEmitted < maxSamples)
         {
             double M = D + D * D * D / 3.0;
             double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
             proc.sample(tsamp, positionAtE(D));
+            nEmitted++;
 
             // Curvature-proportional step: k = kMax at D=0, falls as (1+D²)^(-3/4).
             // The (3/4) exponent gives step ∝ D^(3/2) for large D, which produces
@@ -443,11 +460,12 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // even for very near-parabolic orbits (w small). Formula: max(20, (1/w)^(2/3)).
             double kMax = max(20.0, pow(1.0 / w, 2.0 / 3.0));
             double E = -E_max;
-            while (E < E_max)
+            while (E < E_max && nEmitted < maxSamples)
             {
                 double M = E - eccentricity * sin(E);
                 double tsamp = epoch + (M - meanAnomalyAtEpoch) / meanMotion;
                 proc.sample(tsamp, positionAtE(E));
+                nEmitted++;
 
                 double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
                 E += dE / max(min(k, kMax), 1.0);
@@ -478,11 +496,12 @@ void EllipticalOrbit::sample(double, double t, int nSamples,
             // window returned by getValidRange(); a closed periodic loop has no such window.
             double E = 0.0;
             double M0 = E - eccentricity * sin(E);
-            while (E < 2 * PI)
+            while (E < 2 * PI && nEmitted < maxSamples)
             {
                 double M = E - eccentricity * sin(E);
                 double tsamp = t + (M - M0) * period / (2 * PI);
                 proc.sample(tsamp, positionAtE(E));
+                nEmitted++;
 
                 double k = sqrt(w) * pow(square(sin(E)) + w * square(cos(E)), -1.5);
                 E += dE / max(min(k, kMax), 1.0);
