@@ -14,7 +14,10 @@ permissions:
 jobs:
   build-windows:
     name: "Build and package Windows"
-    runs-on: windows-latest
+    # Pinned to windows-2022 (VS2022). windows-latest rotated to VS2026 (VS18),
+    # which changes the vcpkg ABI hash, forces a cspice rebuild from source, and
+    # that pinned port fails to configure under the newer MSVC/ninja toolchain.
+    runs-on: windows-2022
     steps:
     - name: Checkout source code
       uses: actions/checkout@v6

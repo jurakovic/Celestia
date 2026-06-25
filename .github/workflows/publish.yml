@@ -18,7 +18,8 @@ env:
 jobs:
   build:
     name: "Build and package Windows"
-    runs-on: windows-latest
+    # Pinned to windows-2022 (VS2022) -- see ci.yml for rationale (VS2026/cspice).
+    runs-on: windows-2022
     steps:
     - name: Checkout source code
       uses: actions/checkout@v6
