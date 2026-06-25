@@ -3,7 +3,7 @@
 
 ; This script was tested with Inno Setup Compiler version 5.1.5
 
-#define CelestiaVersion "1.6.4.4"
+#define CelestiaVersion "1.6.4.5"
 
 [Setup]
 AppName=Celestia
